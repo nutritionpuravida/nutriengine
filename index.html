@@ -47,6 +47,11 @@
 
 body { font-family: var(--font); background: var(--bg-page); color: var(--text-primary); font-size: 14px; line-height: 1.5; transition: background .2s, color .2s; }
 input, select, textarea, button { font-family: var(--font); font-size: 14px; color: var(--text-primary); }
+/* Ensure dropdown options always have explicit, theme-correct colors —
+   prevents "white text on white background" when browsers render the
+   native options popup using OS defaults instead of inherited CSS vars */
+select { background-color: var(--bg-input); color: var(--text-primary); }
+select option { background-color: var(--bg-surface); color: var(--text-primary); }
 
 /* ─── LAYOUT ─── */
 .app { display: flex; height: 100vh; overflow: hidden; }
@@ -695,6 +700,10 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-header"><span class="card-title">🔄 SYSTEM — Exchange System (Σύστημα Ισοδυνάμων)</span></div>
       <div class="card-body">
         <div class="alert info">ℹ️ Enter Fruit, Vegetables, Dairy servings. Starch, Protein, Fat auto-calculate from remaining macros. Uses condition-aware clinical caps.</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+          <button class="btn primary" onclick="refreshExchangePlansNow()">🔄 Apply to Meal Plans</button>
+          <span style="font-size:12px;color:var(--text-muted)">Click after changing servings to push updates into 1-Day, 7-Day plan and Report</span>
+        </div>
         <div id="exchange-rows"></div>
         <div class="section-label">MACRO MATCH CHECK</div>
         <div id="exchange-check"></div>
@@ -1019,6 +1028,16 @@ const MEALS = {
   DIN_PASTA_MINCE:    (ex,p) => 'Μακαρόνια + κιμάς' + mealSuffix(ex,p,'σαλάτα'),
   DIN_SOUVLAKI_PITA:  (ex,p) => 'Σουβλάκι κοτόπουλο + κυπριακή πίτα – σαλάτα (2 φλ.)',
   DIN_BIFTEKI_BULGUR: (ex,p) => 'Μπιφτέκι + πλιγούρι' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_CHICKPEA_STEW:  (ex,p) => 'Ρεβίθια γιαχνί + ψωμί ολικής – σαλάτα (2 φλ.)',
+  LUN_TOFU_RICE:      (ex,p) => 'Τόφου σαλτέ με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_HALLOUMI_PASTA: (ex,p) => 'Χαλούμι ψητό + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_BEAN_SALAD:     (ex,p) => 'Φασόλια σαλάτα + ελαιόλαδο + ψωμί ολικής – σαλάτα (2 φλ.)',
+  DIN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  DIN_TOFU_STIRFRY:   (ex,p) => 'Τόφου stir-fry με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  DIN_CHICKPEA_STEW:  (ex,p) => 'Ρεβίθια γιαχνί + ψωμί ολικής – σαλάτα (2 φλ.)',
+  DIN_HALLOUMI_SALAD: (ex,p) => 'Χαλούμι ψητό + σαλάτα μεγάλη (3 φλ.) + ψωμί ολικής',
+  DIN_BEAN_PASTA:     (ex,p) => 'Φασόλια + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα'),
 };
 
 // ── MEAL EXCHANGE COSTS ──
@@ -1050,6 +1069,18 @@ const MEAL_EXCHANGES = {
   DIN_PASTA_MINCE:    {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
   DIN_SOUVLAKI_PITA:  {protein:2, starch:2, fat:0, fruit:0, dairy:0, veg:1}, // fixed: souvlaki + pita + salad
   DIN_BIFTEKI_BULGUR: {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
+  // Vegetarian/Vegan options — legumes provide both starch AND protein
+  // (standard exchange convention: ½ cup cooked legumes = 1 starch + 1 protein)
+  LUN_LENTILS_RICE:   {protein:1, starch:0, fat:0, fruit:0, dairy:0, veg:1}, // lentils add their own starch+protein via portions
+  LUN_CHICKPEA_STEW:  {protein:2, starch:2, fat:1, fruit:0, dairy:0, veg:2}, // fixed: 1 cup chickpeas + bread + oil + salad
+  LUN_TOFU_RICE:      {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1}, // tofu via portions like meat
+  LUN_HALLOUMI_PASTA: {protein:2, starch:0, fat:0, fruit:0, dairy:0, veg:0}, // halloumi = 2 protein exchanges fixed
+  LUN_BEAN_SALAD:     {protein:2, starch:2, fat:1, fruit:0, dairy:0, veg:2}, // fixed: beans + bread + oil + salad
+  DIN_LENTILS_RICE:   {protein:1, starch:0, fat:0, fruit:0, dairy:0, veg:1},
+  DIN_TOFU_STIRFRY:   {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:2},
+  DIN_CHICKPEA_STEW:  {protein:2, starch:2, fat:1, fruit:0, dairy:0, veg:2},
+  DIN_HALLOUMI_SALAD: {protein:2, starch:1, fat:0, fruit:0, dairy:0, veg:3},
+  DIN_BEAN_PASTA:     {protein:2, starch:0, fat:1, fruit:0, dairy:0, veg:1},
 };
 
 // Exchange costs for each snack option
@@ -1078,7 +1109,9 @@ function exchangesToKcal(composition, portions, fruitOverride){
     fat:     (composition.fat||0)     + (portions?portions.fat:0),
     fruit:   fruitCount,
     dairy:   composition.dairy||0,
-    veg:     composition.veg||0,
+    // veg: use the dynamic per-meal portion if provided (replaces the old
+    // fixed composition.veg, which under-counted higher veg servings)
+    veg:     (portions && portions.veg!==undefined) ? portions.veg : (composition.veg||0),
   };
   return Math.round(
     merged.protein * m.protein.kcal +
@@ -1132,7 +1165,7 @@ function formatCups(exCount) {
 }
 
 function mealSuffix(ex, p, veg) {
-  p = p || {prot:0, starch:0, fat:0};
+  p = p || {prot:0, starch:0, fat:0, veg:undefined};
   const parts = [];
   if (p.prot > 0) {
     // Clinical standard: 1 protein exchange ≈ 30g cooked lean meat/fish (1 oz).
@@ -1147,7 +1180,11 @@ function mealSuffix(ex, p, veg) {
   if (p.starch > 0) parts.push(`${p.starch} μερίδ${p.starch===1?'α':'ες'} αμύλου — π.χ. ${formatCups(p.starch)} φλ. ρύζι/ζυμαρικά ή πατάτα μαγειρεμένα (δες Οδηγό Ισοδυναμιών για άλλες επιλογές)`);
   if (p.fat > 0)    parts.push(`${p.fat} κ.γ. ελαιόλαδο`);
   const portionTxt = parts.length ? ' (' + parts.join(' + ') + ')' : '';
-  const vegCups = ex.veg >= 4 ? '(3 φλ.)' : '(2 φλ.)';
+  // Use the actual per-meal veg exchange count (from getMealPortions) for
+  // the cup display — falls back to the old total-based estimate only if
+  // this meal's specific veg portion wasn't passed in.
+  const vegForThisMeal = (p && p.veg!==undefined) ? p.veg : (ex.veg||0);
+  const vegCups = vegForThisMeal >= 4 ? '(3 φλ.)' : vegForThisMeal>=2 ? '(2 φλ.)' : vegForThisMeal>=1 ? '(1 φλ.)' : '';
   return portionTxt + ' – ' + veg + ' ' + vegCups;
 }
 
@@ -1193,7 +1230,7 @@ const DIET_RESTRICTIONS = {
   Omnivore:    null, // no restrictions
   Pescatarian: {excludeKeys:['LUN_CHICKEN_RICE','LUN_FASOLAKIA_PORK','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','BRK_TOAST_TURKEY']},
   Vegetarian:  {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','BRK_TOAST_TURKEY']},
-  Vegan:       {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','DIN_OMELETTE','BRK_TOAST_TURKEY','BRK_EGGS','BRK_EGGS_TOAST']},
+  Vegan:       {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','DIN_OMELETTE','BRK_TOAST_TURKEY','BRK_EGGS','BRK_EGGS_TOAST','LUN_HALLOUMI_PASTA','DIN_HALLOUMI_SALAD','BRK_CEREAL']}, // BRK_CEREAL uses dairy milk; vegan clients should use plant milk (clinician note applies)
 };
 
 // Filters meal option lists based on diet type
@@ -1356,6 +1393,11 @@ const LUNCH_OPTIONS = [
   {v:'LUN_TUNA_POTATO',    l:'Τόνος + πατάτα'},
   {v:'LUN_PASTA_MINCE',    l:'Μακαρόνια + κιμάς'},
   {v:'LUN_BIFTEKI_BULGUR', l:'Μπιφτέκι + πλιγούρι'},
+  {v:'LUN_LENTILS_RICE',   l:'Φακές + ρύζι 🌱'},
+  {v:'LUN_CHICKPEA_STEW',  l:'Ρεβίθια γιαχνί + ψωμί 🌱'},
+  {v:'LUN_TOFU_RICE',      l:'Τόφου σαλτέ + ρύζι 🌱'},
+  {v:'LUN_HALLOUMI_PASTA', l:'Χαλούμι ψητό + ζυμαρικά 🥚'},
+  {v:'LUN_BEAN_SALAD',     l:'Φασόλια σαλάτα + ψωμί 🌱'},
 ];
 const DINNER_OPTIONS = [
   {v:'DIN_CHICKEN_RICE',   l:'Κοτόπουλο + ρύζι'},
@@ -1365,6 +1407,11 @@ const DINNER_OPTIONS = [
   {v:'DIN_PASTA_MINCE',    l:'Μακαρόνια + κιμάς'},
   {v:'DIN_SOUVLAKI_PITA',  l:'Σουβλάκι + πίτα'},
   {v:'DIN_BIFTEKI_BULGUR', l:'Μπιφτέκι + πλιγούρι'},
+  {v:'DIN_LENTILS_RICE',   l:'Φακές + ρύζι 🌱'},
+  {v:'DIN_TOFU_STIRFRY',   l:'Τόφου stir-fry + ρύζι 🌱'},
+  {v:'DIN_CHICKPEA_STEW',  l:'Ρεβίθια γιαχνί + ψωμί 🌱'},
+  {v:'DIN_HALLOUMI_SALAD', l:'Χαλούμι ψητό + σαλάτα 🥚'},
+  {v:'DIN_BEAN_PASTA',     l:'Φασόλια + ζυμαρικά 🌱'},
 ];
 function mealOptionsHtml(options, current){
   return options.map(o=>`<option value="${o.v}" ${o.v===current?'selected':''}>${o.l}</option>`).join('');
@@ -1399,7 +1446,10 @@ function snackText(code, slot){
   if(['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(code)){
     const dist = getFruitDistribution();
     const count = slot==='snk2' ? dist.snk2 : dist.snk1;
-    if(count===0) return '—';
+    // If this slot's fruit allocation is 0 (e.g. very low total fruit
+    // servings), don't show a dash — show a small clinically sensible
+    // alternative instead, so the meal plan never looks "empty"
+    if(count===0) return '½ φλ. λαχανικά ωμά (βλ. Οδηγό Ισοδυναμιών)';
     return `${count} φρούτ${count>1?'α':'ο'} (βλ. Οδηγό Ισοδυναμιών)`;
   }
   return opt.text;
@@ -1452,12 +1502,25 @@ const CAPS = {
 };
 
 // Split a daily exchange total across N main meals, each capped at perMealMax
+// Splits a total number of exchanges across `numMeals`, respecting a per-meal
+// maximum. CRITICAL: never silently discards exchanges. If the total exceeds
+// what fits at the per-meal cap, the excess is added evenly on top (clinician
+// has manually overridden above the suggested cap, so we honor their intent
+// and let Engine Control flag the per-meal cap separately, rather than
+// invisibly dropping kcal that exist in the Exchange System).
 function splitAcrossMeals(total, numMeals, perMealMax) {
-  const capped = Math.min(total, perMealMax * numMeals);
-  const base = Math.floor(capped / numMeals);
-  let rem = capped - base * numMeals;
+  const atCap = Math.min(total, perMealMax * numMeals);
+  const excess = Math.max(0, total - atCap);
+  const base = Math.floor(atCap / numMeals);
+  let rem = atCap - base * numMeals;
   const arr = [];
   for (let i = 0; i < numMeals; i++) arr.push(base + (i < rem ? 1 : 0));
+  // Distribute any excess (above per-meal cap) evenly so it's never lost
+  if (excess > 0) {
+    const exBase = Math.floor(excess / numMeals);
+    let exRem = excess - exBase * numMeals;
+    for (let i = 0; i < numMeals; i++) arr[i] += exBase + (i < exRem ? 1 : 0);
+  }
   return arr;
 }
 
@@ -1469,9 +1532,13 @@ function getMealPortions() {
   const starchSplit  = splitAcrossMeals(ex.starch,  2, caps.starchPerMealMax);
   const proteinSplit = splitAcrossMeals(ex.protein, 2, caps.proteinPerMealMax);
   const fatSplit     = splitAcrossMeals(ex.fat,     2, caps.fatPerMealMax);
+  // Veg has no clinical per-meal cap (encouraged food group) — split evenly
+  // across lunch+dinner so the FULL S.ex.veg amount is always reflected,
+  // never silently lost like the old fixed veg:1 in MEAL_EXCHANGES used to do
+  const vegSplit = splitAcrossMeals(ex.veg, 2, 99);
   return {
-    lunch:  { prot: proteinSplit[0], starch: starchSplit[0], fat: fatSplit[0] },
-    dinner: { prot: proteinSplit[1], starch: starchSplit[1], fat: fatSplit[1] },
+    lunch:  { prot: proteinSplit[0], starch: starchSplit[0], fat: fatSplit[0], veg: vegSplit[0] },
+    dinner: { prot: proteinSplit[1], starch: starchSplit[1], fat: fatSplit[1], veg: vegSplit[1] },
   };
 }
 
@@ -1878,6 +1945,27 @@ function onExInput(key, field, rawVal){
 // Called before building any meal plan to guarantee S.ex reflects what
 // the dietitian has typed, even if oninput didn't fire (e.g. after paste
 // or spinner click without blur).
+// Manually triggered "Apply" button — forces a full sync of exchange inputs
+// into S.ex, recalculates everything, and shows a confirmation so the
+// clinician always knows their input was captured (no silent failures).
+function refreshExchangePlansNow(){
+  syncExchangeInputsToState();
+  calcExchanges();
+  renderExchanges();
+  renderEngine();
+  updateDashMetrics();
+  if(document.getElementById('page-oneday')) buildOneDayPlan();
+  if(document.getElementById('page-sevenday')) buildSevenDay();
+  if(document.getElementById('page-report')) buildReport();
+  // Brief visual confirmation
+  const btn=document.querySelector('button[onclick="refreshExchangePlansNow()"]');
+  if(btn){
+    const orig=btn.textContent;
+    btn.textContent='✅ Applied!';
+    setTimeout(()=>{btn.textContent=orig;},1500);
+  }
+}
+
 function syncExchangeInputsToState(){
   ['fruit','veg','dairy','starch','protein','fat'].forEach(key=>{
     const el=document.getElementById('ex-srv-'+key);
@@ -2088,7 +2176,7 @@ function buildSevenDay(){
   });
   const ex=S.ex;
   const portions=getMealPortions();
-  const sel=(key,di,opts,cur)=>`<select style="width:100%;font-size:10px;padding:2px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);margin-bottom:3px;opacity:0.75" onchange="updateWeekPlan(${di},'${key}',this.value)">${mealOptionsHtml(opts,cur)}</select>`;
+  const sel=(key,di,opts,cur)=>`<select style="width:100%;font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg-page);color:var(--text-secondary);margin-bottom:3px" onchange="updateWeekPlan(${di},'${key}',this.value)">${mealOptionsHtml(opts,cur)}</select>`;
 
   let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>';
   html+=`<th style="background:var(--teal-600);color:#fff;padding:8px;min-width:90px">Γεύμα</th>`;
@@ -2696,6 +2784,15 @@ function applyState(state){
   Object.entries(state.fields||{}).forEach(([id,val])=>{const el=document.getElementById(id); if(el) el.value=val;});
   document.querySelectorAll('#p-conditions input[type=checkbox]').forEach(cb=>{cb.checked=(state.conditions||[]).includes(cb.value);});
   document.getElementById('pregnancy-trimester-field').style.display = (state.conditions||[]).includes('Pregnancy') ? 'block' : 'none';
+  // Repopulate breakfast/lunch/dinner dropdowns with the CORRECT diet-filtered
+  // option list BEFORE restoring their saved value — otherwise setting .value
+  // to an option not present in the (possibly stale/filtered) <select> silently
+  // fails and the dropdown falls back to its first option.
+  const diet = (state.fields&&state.fields['p-diet']) || 'Omnivore';
+  const brkEl=document.getElementById('s-breakfast'), lunEl=document.getElementById('s-lunch'), dinEl=document.getElementById('s-dinner');
+  if(brkEl) brkEl.innerHTML = mealOptionsHtml(filteredMealOptions(BREAKFAST_OPTIONS,diet), (state.fields&&state.fields['s-breakfast'])||'BRK_TOAST');
+  if(lunEl) lunEl.innerHTML = mealOptionsHtml(filteredMealOptions(LUNCH_OPTIONS,diet), (state.fields&&state.fields['s-lunch'])||'LUN_CHICKEN_RICE');
+  if(dinEl) dinEl.innerHTML = mealOptionsHtml(filteredMealOptions(DINNER_OPTIONS,diet), (state.fields&&state.fields['s-dinner'])||'DIN_FISH_POTATO');
   if(state.ex) S.ex={...S.ex,...state.ex};
   if(state.exAuto) S.exAuto={...S.exAuto,...state.exAuto};
   if(state.exMeta) S.exMeta=state.exMeta;
