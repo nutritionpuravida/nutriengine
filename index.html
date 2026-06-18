@@ -428,6 +428,8 @@ tr:hover td { background: var(--bg-hover); }
   <button class="nav-item" onclick="nav('report')">📄 Client Report</button>
   <button class="nav-item" onclick="nav('tracking')">📈 Progress Tracking</button>
   <button class="nav-item" onclick="nav('equivalents')">📖 Equivalents Guide</button>
+  <div class="nav-group-label">Inpatient / Hospital Practice</div>
+  <button class="nav-item" onclick="nav('enteral')">🏥 Enteral Nutrition</button>
   <div class="nav-group-label">Clinical</div>
   <button class="nav-item" onclick="nav('engine')">⚙️ Engine Control <span class="nav-badge" id="engine-badge">!</span></button>
   <div class="sidebar-footer">NutriEngine v53 · Build 2026-06-17<br>Fill green inputs · Avoid overwriting formulas</div>
@@ -483,7 +485,7 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-header"><span class="card-title">🗂️ My Clients</span><span class="card-action" onclick="newClient()">+ New client</span></div>
       <div class="card-body">
         <div class="alert info">ℹ️ Clients are saved to your secure cloud account. Click "💾 Save Client" (top-right of the Client Profile page) any time you make changes — including before switching to a different client. "Load" restores all their data (profile, body comp, exchanges, meal plans, labs, notes).</div>
-        <div class="alert warn">⚠️ Browser storage can be lost if you clear your browser data, or isn't shared between devices. <strong>Download a backup regularly</strong> — especially before clearing your browser cache or switching to a new phone/laptop.</div>
+        <div class="alert warn"><span>⚠️ Browser storage can be lost if you clear your browser data, or isn't shared between devices. <strong>Download a backup regularly</strong> — especially before clearing your browser cache or switching to a new phone/laptop.</span></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <button class="btn primary" onclick="exportAllClients()">⬇️ Download Backup (all clients)</button>
           <label class="btn" style="cursor:pointer;margin:0">⬆️ Restore from Backup<input type="file" accept=".json" onchange="importClientsFile(this)" style="display:none"></label>
@@ -819,7 +821,7 @@ tr:hover td { background: var(--bg-hover); }
     <div class="card">
       <div class="card-header"><span class="card-title">📈 TRACKING — Progress / Body Composition History</span></div>
       <div class="card-body">
-        <div class="alert info">ℹ️ <strong>For follow-up visits:</strong> load the client from "My Clients", come here, add a new entry below for today's visit, then go to Client Profile and click "💾 Save Client" to keep this update permanently.</div>
+        <div class="alert info"><span>ℹ️ <strong>For follow-up visits:</strong> load the client from "My Clients", come here, add a new entry below for today's visit, then go to Client Profile and click "💾 Save Client" to keep this update permanently.</span></div>
         <div class="form-grid three" style="margin-bottom:14px">
           <div class="form-field"><label>Visit Date</label><input type="date" id="t-date"></div>
           <div class="form-field"><label>Weight (kg)</label><input type="number" id="t-weight" step="0.1" placeholder="—"></div>
@@ -834,6 +836,115 @@ tr:hover td { background: var(--bg-hover); }
         <div id="tracking-chart"></div>
         <div class="section-label">VISIT HISTORY</div>
         <div id="tracking-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTERAL NUTRITION (hospital / inpatient practice) -->
+  <div class="page" id="page-enteral">
+    <div class="card">
+      <div class="card-header"><span class="card-title">🏥 INPUT — Enteral Nutrition Planning (Εντερική Σίτιση)</span></div>
+      <div class="card-body">
+        <div class="alert info"><span>ℹ️ This module is a calculation aid for inpatient/enteral feeding plans, based on the ESPEN practical guideline for polymorbid medical inpatients (Clin Nutr 2024;43:674–691). It computes targets and formula math — it does <strong>not</strong> decide the feeding route (oral/EN/PN) for you. That decision always requires bedside clinical assessment by the treating team, under your supervisor's direction.</span></div>
+
+        <div class="section-label">1 · MALNUTRITION RISK SCREENING</div>
+        <div class="field-note" style="margin-bottom:10px">Pick whichever screening tool your ward uses — MUST and NRS-2002 are both ESPEN-endorsed.</div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">MUST — Malnutrition Universal Screening Tool</span></div>
+          <div class="card-body">
+            <div class="form-grid three">
+              <div class="form-field"><label>BMI (from Client Profile)</label><input type="text" id="en-must-bmi-display" readonly style="background:var(--bg-page);cursor:not-allowed"></div>
+              <div class="form-field"><label>Weight loss in last 3–6 months (%)</label><input type="number" id="en-must-weightloss" placeholder="—" step="0.1" min="0" oninput="calcMUST()"></div>
+              <div class="form-field" style="display:flex;align-items:flex-end;padding-bottom:8px">
+                <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="en-must-acute" onchange="calcMUST()" style="width:auto"> Acutely ill AND likely no nutritional intake &gt;5 days</label>
+              </div>
+            </div>
+            <div id="en-must-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">NRS-2002 — Nutritional Risk Screening</span></div>
+          <div class="card-body">
+            <div class="form-grid two">
+              <div class="form-field">
+                <label>Nutritional status impairment</label>
+                <select id="en-nrs-nutrition" onchange="calcNRS()">
+                  <option value="0">0 — Normal nutritional status</option>
+                  <option value="1">1 — Mild: wt loss &gt;5%/3mo OR intake &lt;50–75% of needs last week</option>
+                  <option value="2">2 — Moderate: wt loss &gt;5%/2mo OR BMI 18.5–20.5 + impaired condition OR intake 25–50%</option>
+                  <option value="3">3 — Severe: wt loss &gt;5%/1mo OR BMI &lt;18.5 + impaired condition OR intake 0–25%</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Disease severity</label>
+                <select id="en-nrs-disease" onchange="calcNRS()">
+                  <option value="0">0 — Normal nutritional requirements</option>
+                  <option value="1">1 — Mild: hip fracture, chronic disease w/ acute complication (cirrhosis, COPD, chronic hemodialysis, diabetes, oncology)</option>
+                  <option value="2">2 — Moderate: major abdominal surgery, stroke, severe pneumonia, hematologic malignancy</option>
+                  <option value="3">3 — Severe: head injury, bone marrow transplant, ICU (APACHE &gt;10)</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-note">Age ≥70 adds +1 automatically (from Client Profile age).</div>
+            <div id="en-nrs-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">EAT-10 — Swallowing / Dysphagia Screen</span></div>
+          <div class="card-body">
+            <div class="field-note" style="margin-bottom:8px">Each item 0 (no problem) – 4 (severe problem). Directly relevant to the oral-vs-EN route decision.</div>
+            <div id="en-eat10-items" class="form-grid three"></div>
+            <div id="en-eat10-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="section-label">2 · ENERGY & PROTEIN TARGETS</div>
+        <div class="form-grid two">
+          <div class="form-field">
+            <label>Energy approach</label>
+            <select id="en-energy-approach" onchange="calcEnteralTargets()">
+              <option value="general">General adult, weight-based: 25–30 kcal/kg/day</option>
+              <option value="elderly">≥65y polymorbid (ESPEN R9): ~27 kcal/kg/day TEE</option>
+              <option value="underweight">Severely underweight (ESPEN R10/R11): ~30 kcal/kg/day — ⚠ refeeding risk</option>
+            </select>
+          </div>
+          <div class="form-field"><label>kcal/kg actual body weight/day</label><input type="number" id="en-kcal-per-kg" value="27" step="0.5" oninput="calcEnteralTargets()"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="form-field"><label>Protein g/kg body weight/day</label><input type="number" id="en-protein-per-kg" value="1.3" step="0.1" oninput="calcEnteralTargets()"></div>
+          <div class="form-field" style="display:flex;align-items:flex-end;padding-bottom:8px">
+            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="en-on-dialysis" onchange="calcEnteralTargets()" style="width:auto"> Currently on kidney replacement therapy (dialysis)</label>
+          </div>
+        </div>
+        <div id="en-targets-result" style="margin-top:10px"></div>
+
+        <div class="section-label">3 · ENTERAL FORMULA &amp; DELIVERY CALCULATOR</div>
+        <div class="alert warn" style="margin-bottom:10px">✏️ The kcal/mL and protein values below are generic starting points — replace them with the actual product used on your ward before relying on this for a real patient.</div>
+        <div class="form-grid three">
+          <div class="form-field">
+            <label>Formula type (generic preset)</label>
+            <select id="en-formula-preset" onchange="applyFormulaPreset()">
+              <option value="standard">Standard polymeric, 1.0 kcal/mL</option>
+              <option value="dense">Energy-dense polymeric, 1.5 kcal/mL</option>
+              <option value="highprotein">High-protein, 1.2 kcal/mL</option>
+              <option value="fiber">Fiber-enriched, 1.0 kcal/mL</option>
+              <option value="custom">Custom (edit fields directly)</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Formula kcal/mL</label><input type="number" id="en-formula-kcal-ml" value="1.0" step="0.05" oninput="calcEnteralFormula()"></div>
+          <div class="form-field"><label>Formula protein (g per 100mL)</label><input type="number" id="en-formula-protein-100ml" value="4.0" step="0.1" oninput="calcEnteralFormula()"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="form-field"><label>Continuous infusion duration (hours/day)</label><input type="number" id="en-infusion-hours" value="20" step="1" oninput="calcEnteralFormula()"></div>
+          <div class="form-field"><label>OR bolus feeds per day</label><input type="number" id="en-bolus-feeds" value="5" step="1" oninput="calcEnteralFormula()"></div>
+        </div>
+        <div id="en-formula-result" style="margin-top:10px"></div>
+
+        <div class="section-label">4 · INITIATION &amp; ROUTE — REFERENCE ONLY (your team decides)</div>
+        <div id="en-guidance"></div>
       </div>
     </div>
   </div>
@@ -1872,7 +1983,7 @@ function renderCombinedGuidance(conditions) {
   const items = list.map(c => ({key:c, ...(COND_GUIDANCE[c]||COND_GUIDANCE.General)}));
   let html = '';
   if (list.length > 1) {
-    html += `<div class="alert warn" style="margin-bottom:10px"><strong>⚠ Πολλαπλές παθήσεις (${list.length})</strong> — οι παρακάτω οδηγίες συνδυάζονται. Σε πολύπλοκες περιπτώσεις (ιδίως ΧΝΝ/Αιμοκάθαρση + Διαβήτης) απαιτείται στενή κλινική παρακολούθηση και πιθανή συνεργασία με νεφρολόγο.</div>`;
+    html += `<div class="alert warn" style="margin-bottom:10px"><span><strong>⚠ Πολλαπλές παθήσεις (${list.length})</strong> — οι παρακάτω οδηγίες συνδυάζονται. Σε πολύπλοκες περιπτώσεις (ιδίως ΧΝΝ/Αιμοκάθαρση + Διαβήτης) απαιτείται στενή κλινική παρακολούθηση και πιθανή συνεργασία με νεφρολόγο.</span></div>`;
   }
   items.forEach(cg => {
     html += `<div style="margin-bottom:${items.length>1?'10px':'0'};${items.length>1?'padding-bottom:10px;border-bottom:1px solid var(--border)':''}">
@@ -1941,6 +2052,7 @@ const PAGE_INFO = {
   notes:{title:'Clinical Notes / Labs',sub:'Diagnoses · Medication · Clinician notes'},
   labs:{title:'Blood Analysis',sub:'Lab values with reference ranges · Suggested vitamins & minerals'},
   equivalents:{title:'Equivalents Guide',sub:'Printable food exchange list for clients — EN / GR'},
+  enteral:{title:'Enteral Nutrition',sub:'Εντερική Σίτιση — Screening · Targets · Formula calculator (ESPEN 2024)'},
 };
 
 function nav(id) {
@@ -1969,6 +2081,7 @@ function nav(id) {
   if(id==='report') buildReport();
   if(id==='engine') renderEngine();
   if(id==='tracking') renderTracking();
+  if(id==='enteral'){ renderEAT10Items(); calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula(); renderEnteralGuidance(); }
 }
 
 function calcAll() {
@@ -2670,6 +2783,209 @@ function buildReport(){
   </div>`);
 }
 
+// ═══════════════════════════════════════════
+// ENTERAL NUTRITION MODULE (inpatient/hospital practice)
+// Based on: ESPEN practical guideline — Nutritional support for polymorbid
+// medical inpatients, Clin Nutr 2024;43:674-691. Screening tools (MUST,
+// NRS-2002, EAT-10) per their original published sources.
+// This module computes TARGETS and FORMULA MATH only. It deliberately does
+// NOT decide feeding route (oral/EN/PN) — that requires bedside clinical
+// assessment by the treating team. See renderEnteralGuidance() for the
+// reference-only decision ladder.
+// ═══════════════════════════════════════════
+
+function renderEAT10Items(){
+  const container = document.getElementById('en-eat10-items');
+  if(!container || container.children.length) return; // idempotent — never wipe live answers
+  let html='';
+  EAT10_ITEMS.forEach((item,i)=>{
+    const n=i+1;
+    html+=`<div class="form-field"><label>${n}. ${item.gr}<br><span style="font-weight:400;color:var(--text-muted)">${item.en}</span></label><input type="number" id="en-eat10-q${n}" min="0" max="4" step="1" placeholder="0–4" oninput="calcEAT10()"></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function calcMUST(){
+  const bmiDisplay=document.getElementById('en-must-bmi-display');
+  const bmi = S.bmi || null;
+  if(bmiDisplay) bmiDisplay.value = bmi ? bmi.toFixed(1) : '— (fill Client Profile)';
+
+  let bmiScore = 0;
+  if(bmi){ if(bmi<18.5) bmiScore=2; else if(bmi<20.0) bmiScore=1; else bmiScore=0; }
+
+  const wl = parseFloat(v('en-must-weightloss'));
+  let wlScore = 0;
+  if(!isNaN(wl)){ if(wl>10) wlScore=2; else if(wl>=5) wlScore=1; else wlScore=0; }
+
+  const acute = document.getElementById('en-must-acute')?.checked;
+  const acuteBonus = acute ? 2 : 0;
+
+  const total = bmiScore + wlScore + acuteBonus;
+  let risk, action, color;
+  if(total===0){ risk='Low risk (Χαμηλός Κίνδυνος)'; color='ok';
+    action='Routine clinical care. Repeat screening — Hospital: weekly · Care home: monthly · Community: yearly for special groups (e.g. age &gt;75y).'; }
+  else if(total===1){ risk='Medium risk (Μεσαίος Κίνδυνος)'; color='warn';
+    action='Observe. Hospital: 3-day record of dietary intake & fluids. If intake adequate → continue routine care; if inadequate → follow local policy, set goals, improve & increase nutritional intake, monitor & review (Hospital weekly · Home care monthly · Community every 2–3 months).'; }
+  else { risk='High risk (Μεγάλος Κίνδυνος)'; color='err';
+    action='Treat. Refer to dietitian / Nutritional Support Team or follow local guidelines. Set goals, improve & increase overall nutritional intake. Monitor & review care plan — Hospital: weekly · Care home: monthly · Community: monthly. (*unless treatment considered of no benefit, e.g. imminent death.)'; }
+
+  setEl('en-must-result', `
+    <div class="alert ${color}"><span><strong>MUST total score: ${total}</strong> — ${risk}<br><span style="font-size:12px">BMI score ${bmiScore} + weight-loss score ${wlScore} + acute illness ${acuteBonus}</span></span></div>
+    <div class="field-note" style="margin-top:6px">${action}</div>
+  `);
+}
+
+function calcNRS(){
+  const nutritionScore = parseInt(v('en-nrs-nutrition'))||0;
+  const diseaseScore = parseInt(v('en-nrs-disease'))||0;
+  const ageBonus = (S.age && S.age>=70) ? 1 : 0;
+  const total = nutritionScore + diseaseScore + ageBonus;
+  const atRisk = total>=3;
+  setEl('en-nrs-result', `
+    <div class="alert ${atRisk?'err':'ok'}"><span><strong>NRS-2002 total score: ${total}</strong> (nutrition ${nutritionScore} + disease ${diseaseScore} + age≥70 ${ageBonus})<br>
+    ${atRisk ? 'At nutritional risk — initiate a nutritional care plan.' : 'Not currently at nutritional risk by NRS-2002. Re-screen weekly. If the patient is scheduled for major surgery, consider a preventive nutritional care plan regardless of this score, to avoid the associated risk.'}</span></div>
+  `);
+}
+
+function calcEAT10(){
+  let total=0, anyFilled=false;
+  for(let i=1;i<=10;i++){
+    const val=parseInt(v('en-eat10-q'+i));
+    if(!isNaN(val)){ total+=val; anyFilled=true; }
+  }
+  if(!anyFilled){ setEl('en-eat10-result', ''); return; }
+  const flagged = total>=3;
+  setEl('en-eat10-result', `
+    <div class="alert ${flagged?'err':'ok'}"><span><strong>EAT-10 total: ${total} / 40</strong><br>
+    ${flagged ? '⚠ Score ≥3 suggests a possible swallowing problem — discuss with your supervisor; a formal swallow assessment (e.g. SLP) may be warranted before continuing/starting oral intake.' : 'Score &lt;3 — no strong signal of a swallowing problem from this screen alone.'}</span></div>
+  `);
+}
+
+function applyFormulaPreset(){
+  const preset = v('en-formula-preset');
+  const presets = {
+    standard:   {kcal:1.0, protein:4.0},
+    dense:      {kcal:1.5, protein:6.0},
+    highprotein:{kcal:1.2, protein:7.5},
+    fiber:      {kcal:1.0, protein:4.0},
+  };
+  if(presets[preset]){
+    document.getElementById('en-formula-kcal-ml').value = presets[preset].kcal;
+    document.getElementById('en-formula-protein-100ml').value = presets[preset].protein;
+  }
+  calcEnteralFormula();
+}
+
+// Shared by calcEnteralTargets() and calcEnteralFormula() so the formula
+// calculator always uses the exact same target numbers shown above it.
+function getEnteralTargetsForCurrentInputs(){
+  const weight = S.weight || 0;
+  const approach = v('en-energy-approach') || 'general';
+  const kcalPerKg = parseFloat(v('en-kcal-per-kg')) || 0;
+  const proteinPerKg = parseFloat(v('en-protein-per-kg')) || 0;
+  const kcalTarget = weight * kcalPerKg;
+  const proteinTarget = weight * proteinPerKg;
+  return {weight, approach, kcalPerKg, proteinPerKg, kcalTarget, proteinTarget};
+}
+
+function calcEnteralTargets(){
+  // Auto-suggest a sensible default kcal/kg when the approach changes,
+  // without overwriting a value the clinician already typed deliberately —
+  // only adjust when the field still holds one of the OTHER presets' defaults.
+  const approach = v('en-energy-approach');
+  const kcalEl = document.getElementById('en-kcal-per-kg');
+  const knownDefaults = [25,27,27.5,30];
+  if(kcalEl && knownDefaults.includes(parseFloat(kcalEl.value))){
+    kcalEl.value = approach==='underweight' ? 30 : 27;
+  }
+
+  // Renal protein adjustment: ESPEN R13 — 0.8 g/kg/day if eGFR<30 and NOT
+  // on kidney replacement therapy (dialysis patients need MORE protein, not less).
+  const egfr = parseFloat(S.labValues && S.labValues.egfr);
+  const onDialysis = document.getElementById('en-on-dialysis')?.checked;
+  const proteinEl = document.getElementById('en-protein-per-kg');
+  const currentProtein = proteinEl ? parseFloat(proteinEl.value) : null;
+  let renalNote = '';
+  if(!isNaN(egfr) && egfr<30 && !onDialysis){
+    if(proteinEl && currentProtein>=1.2) proteinEl.value = 0.8;
+    renalNote = `<div class="alert warn" style="margin-top:8px">⚠ eGFR ${egfr} (&lt;30) and not on dialysis — ESPEN recommends a LOWER protein target of 0.8 g/kg/day (not 1.2–1.5) unless your supervisor advises otherwise.</div>`;
+  } else {
+    // FIX: if the field is still sitting at the auto-suggested 0.8 from a
+    // PRIOR restricted state (e.g. clinician just checked "on dialysis"
+    // after the field had already been auto-lowered), restore it to a
+    // normal default rather than silently leaving a now-stale, clinically
+    // inappropriate low protein target in place.
+    if(proteinEl && currentProtein===0.8) proteinEl.value = 1.3;
+    if(!isNaN(egfr) && egfr<30 && onDialysis){
+      renalNote = `<div class="field-note">eGFR ${egfr} but on dialysis — the usual 1.2–1.5 g/kg/day protein target still applies; dialysis patients are NOT protein-restricted (losses during dialysis increase needs).</div>`;
+    }
+  }
+
+  const t = getEnteralTargetsForCurrentInputs();
+  const refeedingWarning = (t.approach==='underweight')
+    ? `<div class="alert err" style="margin-top:8px">⚠ Severely underweight target selected — high refeeding syndrome risk. Achieve this target CAUTIOUSLY and SLOWLY (do not start at full rate). Check baseline phosphate, potassium, magnesium, and thiamine before starting; monitor daily for the first week.</div>`
+    : '';
+
+  setEl('en-targets-result', `
+    <div class="metrics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="metric"><div class="m-label">Energy target</div><div class="m-value">${Math.round(t.kcalTarget)} kcal/day</div><div class="field-note">${t.kcalPerKg} kcal/kg × ${t.weight||'—'} kg</div></div>
+      <div class="metric"><div class="m-label">Protein target</div><div class="m-value">${t.proteinTarget.toFixed(0)} g/day</div><div class="field-note">${t.proteinPerKg} g/kg × ${t.weight||'—'} kg</div></div>
+    </div>
+    <div class="field-note" style="margin-top:8px">ESPEN R25: aim for at least 75% of these targets (≈${Math.round(t.kcalTarget*0.75)} kcal / ${(t.proteinTarget*0.75).toFixed(0)} g protein) to meaningfully reduce risk of adverse outcomes — 100% is the goal but 75% is the evidence-based minimum to aim for if full targets aren't immediately achievable.</div>
+    ${refeedingWarning}
+    ${renalNote}
+  `);
+  calcEnteralFormula();
+}
+
+function calcEnteralFormula(){
+  const t = getEnteralTargetsForCurrentInputs();
+  const kcalMl = parseFloat(v('en-formula-kcal-ml')) || 0;
+  const proteinPer100 = parseFloat(v('en-formula-protein-100ml')) || 0;
+  const infusionHours = parseFloat(v('en-infusion-hours')) || 0;
+  const bolusFeeds = parseFloat(v('en-bolus-feeds')) || 0;
+
+  if(!kcalMl || !t.kcalTarget){ setEl('en-formula-result', '<div class="field-note">Enter weight (Client Profile) and formula kcal/mL to calculate.</div>'); return; }
+
+  const volumeMl = t.kcalTarget / kcalMl;
+  const deliveredProtein = volumeMl * (proteinPer100/100);
+  const proteinGapG = deliveredProtein - t.proteinTarget;
+  const rateMlHr = infusionHours ? volumeMl/infusionHours : null;
+  const bolusMl = bolusFeeds ? volumeMl/bolusFeeds : null;
+
+  setEl('en-formula-result', `
+    <div class="metrics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="metric"><div class="m-label">Required daily volume</div><div class="m-value">${Math.round(volumeMl)} mL/day</div></div>
+      <div class="metric"><div class="m-label">Protein delivered at this volume</div><div class="m-value">${deliveredProtein.toFixed(0)} g/day</div></div>
+    </div>
+    <div class="alert ${Math.abs(proteinGapG)<5?'ok':'warn'}" style="margin-top:8px">
+      ${proteinGapG < -5 ? `⚠ This volume under-delivers protein by ${Math.abs(proteinGapG).toFixed(0)} g vs target — consider a higher-protein formula or adding a protein module/fortifier.`
+        : proteinGapG > 5 ? `ℹ This volume over-delivers protein by ${proteinGapG.toFixed(0)} g vs target — usually fine, but worth noting if fluid or renal restriction also applies.`
+        : `✅ Protein at this volume is within ~5g of target.`}
+    </div>
+    <div class="form-grid two" style="margin-top:10px">
+      <div class="metric"><div class="m-label">Continuous rate</div><div class="m-value">${rateMlHr?rateMlHr.toFixed(0)+' mL/hr':'—'}</div><div class="field-note">over ${infusionHours||'—'}h/day</div></div>
+      <div class="metric"><div class="m-label">OR bolus volume</div><div class="m-value">${bolusMl?bolusMl.toFixed(0)+' mL/feed':'—'}</div><div class="field-note">× ${bolusFeeds||'—'} feeds/day</div></div>
+    </div>
+    <div class="field-note" style="margin-top:8px">If refeeding risk was flagged above: start at roughly 25–50% of this volume/rate on day 1, increase over 2–3 days as electrolytes are monitored and remain stable — do not start at the full calculated rate.</div>
+  `);
+}
+
+function renderEnteralGuidance(){
+  setEl('en-guidance', `
+    <div class="card" style="background:var(--bg-page)">
+      <div class="card-body" style="font-size:13px;line-height:1.7">
+        <p><strong>Timing:</strong> early nutritional support (started &lt;48h after admission) is associated with lower mortality and adverse events than later support (ESPEN, Grade A). Don't wait for a "perfect" plan to start something reasonable.</p>
+        <p><strong>Route ladder (reference only — your team decides):</strong> 1) Oral nutrition ± oral nutritional supplements, if it can be done safely (check EAT-10 / swallow assessment above) → reassess every 24–48h against the ≥75% target → 2) if still not met, add/move to Enteral Nutrition (EN) + oral → reassess every 24–48h → 3) if still not met, add Parenteral Nutrition (PN) + oral/EN. EN is generally preferred over PN when the gut is functional — lower infection risk and better preserves gut integrity.</p>
+        <p><strong>Older patients on EN:</strong> formulas enriched with a mix of soluble and insoluble fiber can help bowel function (lower diarrhea/constipation rates).</p>
+        <p><strong>Reassessment:</strong> every 24–48h against the energy/protein targets above; track functional status (e.g. handgrip strength) alongside nutritional intake — functional decline can be a more sensitive signal than weight alone.</p>
+        <p><strong>Medication interactions:</strong> several common drugs interact with EN feeds or specific nutrients (e.g. tetracyclines/divalent cations, ceftriaxone/calcium, warfarin/vitamin K, levothyroxine timing relative to feeds) — flag anything you're unsure about to a pharmacist rather than guessing.</p>
+        <div class="field-note">Source: ESPEN practical guideline — Nutritional support for polymorbid medical inpatients, Clin Nutr 2024;43:674–691.</div>
+      </div>
+    </div>
+  `);
+}
+
 function renderEngine(){
   calcExchanges();
   const ex=S.ex;
@@ -2735,7 +3051,7 @@ function renderEngine(){
   </div>`;
 
   if (conditions.length > 1) {
-    overallHtml += `<div class="alert info" style="margin-top:10px"><strong>ℹ️ Multiple conditions selected:</strong> ${conditions.join(', ')}. Caps below already reflect the most restrictive combination across all of them.</div>`;
+    overallHtml += `<div class="alert info" style="margin-top:10px"><span><strong>ℹ️ Multiple conditions selected:</strong> ${conditions.join(', ')}. Caps below already reflect the most restrictive combination across all of them.</span></div>`;
   }
 
   if (anyCapped) {
@@ -2933,11 +3249,27 @@ const LAB_TESTS = [
   {key:'folate',   gr:'Φολικό οξύ', en:'Folate', unit:'ng/mL', low:2.7, high:17, lowMsg:'Ανεπάρκεια φολικού οξέος'},
   {key:'vitd',     gr:'Βιταμίνη D (25-OH)', en:'Vitamin D (25-OH)', unit:'ng/mL', low:30, high:100, lowMsg:'Ανεπάρκεια βιταμίνης D — πολύ συχνή'},
   {key:'tsh',      gr:'TSH', en:'TSH', unit:'mIU/L', low:0.4, high:4.0, highMsg:'Πιθανός υποθυρεοειδισμός', lowMsg:'Πιθανός υπερθυρεοειδισμός'},
+  {key:'albumin',  gr:'Αλβουμίνη', en:'Albumin', unit:'g/L', low:35, high:50, lowMsg:'Πιθανή υποθρεψία ή φλεγμονή — η αλβουμίνη επηρεάζεται έντονα από φλεγμονή, ερμηνεύστε μαζί με CRP/κλινική εικόνα, όχι ως μεμονωμένο δείκτη θρέψης'},
   {key:'ft4',      gr:'Ελεύθερη Τ4', en:'Free T4', unit:'ng/dL', low:0.8, high:1.8},
   {key:'uric',     gr:'Ουρικό οξύ', en:'Uric Acid', unit:'mg/dL', low:3.5, high:7.2, highMsg:'Σχετίζεται με ουρική αρθρίτιδα — περιορισμός πουρινών'},
   {key:'pth',      gr:'PTH', en:'Parathyroid Hormone', unit:'pg/mL', low:15, high:65, highMsg:'Συχνό σε CKD — σχετίζεται με Ca/Φώσφορο/Βιταμίνη D'},
   {key:'calcium',  gr:'Ασβέστιο', en:'Calcium', unit:'mg/dL', low:8.5, high:10.5},
   {key:'magnesium',gr:'Μαγνήσιο', en:'Magnesium', unit:'mg/dL', low:1.7, high:2.2, lowMsg:'Χαμηλό μαγνήσιο — συχνό με PPI/διουρητικά/διαβήτη'},
+];
+
+// ── EAT-10 swallowing/dysphagia screen ──
+// Belafsky et al. 2008. Each item scored 0 (no problem) – 4 (severe problem).
+const EAT10_ITEMS = [
+  {gr:'Το πρόβλημα κατάποσης μου έχει προκαλέσει απώλεια βάρους', en:'My swallowing problem has caused me to lose weight'},
+  {gr:'Το πρόβλημα κατάποσής μου μειώνει την ικανότητα να βγω έξω για φαγητό', en:'My swallowing problem interferes with my ability to go out for meals'},
+  {gr:'Η κατάποση υγρών απαιτεί έξτρα προσπάθεια', en:'Swallowing liquids takes extra effort'},
+  {gr:'Η κατάποση στερεών απαιτεί έξτρα προσπάθεια', en:'Swallowing solids takes extra effort'},
+  {gr:'Η κατάποση χαπιών απαιτεί έξτρα προσπάθεια', en:'Swallowing pills takes extra effort'},
+  {gr:'Όταν καταπίνω πονάω', en:'Swallowing is painful'},
+  {gr:'Η ευχαρίστηση του φαγητού επηρεάζεται από την κατάποση', en:'The pleasure of eating is affected by my swallowing'},
+  {gr:'Όταν καταπίνω το φαγητό κολλάει στον λαιμό μου', en:'When I swallow food sticks in my throat'},
+  {gr:'Βήχω όταν τρώω', en:'I cough when I eat'},
+  {gr:'Η κατάποση μου προκαλεί στρες', en:'Swallowing is stressful'},
 ];
 
 // ── VITAMIN/MINERAL SUGGESTIONS BY CONDITION ──
@@ -3130,6 +3462,9 @@ const SAVE_FIELD_IDS = [
   's-breakfast','s-lunch','s-dinner',
   'i-goal','i-goal-why','i-goal-tried','i-lifestyle','i-exercise','i-steps','i-sleep','i-stress','i-typical-diet','i-skip-meals','i-cravings','i-intolerances','i-digestion','i-coach-notes',
   'n-diagnoses','n-medication','n-allergies','n-dislikes','n-adherence','n-clinician-notes',
+  'en-must-weightloss','en-nrs-nutrition','en-nrs-disease','en-energy-approach','en-kcal-per-kg','en-protein-per-kg',
+  'en-formula-preset','en-formula-kcal-ml','en-formula-protein-100ml','en-infusion-hours','en-bolus-feeds',
+  ...EAT10_ITEMS.map((_,i)=>'en-eat10-q'+(i+1)),
   ...LAB_TESTS.map(t=>'lab-'+t.key)
 ];
 
@@ -3138,8 +3473,15 @@ function captureState(){
   const fields={};
   SAVE_FIELD_IDS.forEach(id=>{const el=document.getElementById(id); if(el) fields[id]=el.value;});
   const conditions=Array.from(document.querySelectorAll('#p-conditions input[type=checkbox]:checked')).map(cb=>cb.value);
+  // Standalone checkboxes (not part of SAVE_FIELD_IDS — .value on a checkbox
+  // doesn't reflect checked state, so these need explicit handling, same
+  // reasoning as why snack blocks / rep-include checkboxes are separate).
+  const enteralFlags = {
+    acute: document.getElementById('en-must-acute')?.checked || false,
+    onDialysis: document.getElementById('en-on-dialysis')?.checked || false,
+  };
   return {
-    fields, conditions,
+    fields, conditions, enteralFlags,
     ex:S.ex, exAuto:S.exAuto, exMeta:S.exMeta, tracking:S.tracking, mealSel:S.mealSel,
     weekPlans:S.weekPlans, reportOptions:S.reportOptions,
     intake:S.intake, notes:S.notes, labValues:S.labValues,
@@ -3150,9 +3492,13 @@ function captureState(){
 // Restores a previously captured state into the form + app state, then recalculates everything
 function applyState(state){
   if(!state) return;
+  renderEAT10Items(); // ensure the 10 dynamically-created inputs exist before SAVE_FIELD_IDS tries to set their values
   Object.entries(state.fields||{}).forEach(([id,val])=>{const el=document.getElementById(id); if(el) el.value=val;});
   document.querySelectorAll('#p-conditions input[type=checkbox]').forEach(cb=>{cb.checked=(state.conditions||[]).includes(cb.value);});
   document.getElementById('pregnancy-trimester-field').style.display = (state.conditions||[]).includes('Pregnancy') ? 'block' : 'none';
+  const enFlags = state.enteralFlags || {};
+  const enAcuteEl = document.getElementById('en-must-acute'); if(enAcuteEl) enAcuteEl.checked = !!enFlags.acute;
+  const enDialysisEl = document.getElementById('en-on-dialysis'); if(enDialysisEl) enDialysisEl.checked = !!enFlags.onDialysis;
   // Repopulate breakfast/lunch/dinner dropdowns with the CORRECT diet-filtered
   // option list BEFORE restoring their saved value — otherwise setting .value
   // to an option not present in the (possibly stale/filtered) <select> silently
@@ -3190,6 +3536,7 @@ function applyState(state){
   S.labValues=state.labValues||{};
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
   calcAll(); calcBodyComp(); calcMacros();
+  calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
 }
 
 // Resets the whole form/state back to a blank "new client" template
@@ -3222,9 +3569,17 @@ function resetForm(){
   S.mealSel={breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO'};
   S.weekPlans=WEEK_PLANS.map(p=>({...p}));
   S.reportOptions={oneDay:true,sevenDay:true};
+  document.getElementById('en-must-acute') && (document.getElementById('en-must-acute').checked=false);
+  document.getElementById('en-on-dialysis') && (document.getElementById('en-on-dialysis').checked=false);
+  ['en-energy-approach','en-kcal-per-kg','en-protein-per-kg','en-formula-preset','en-formula-kcal-ml','en-formula-protein-100ml','en-infusion-hours','en-bolus-feeds'].forEach(id=>{
+    const el=document.getElementById(id); if(el && el.tagName==='SELECT') el.selectedIndex=0;
+  });
+  const enDefaults={'en-kcal-per-kg':27,'en-protein-per-kg':1.3,'en-formula-kcal-ml':1.0,'en-formula-protein-100ml':4.0,'en-infusion-hours':20,'en-bolus-feeds':5};
+  Object.entries(enDefaults).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.value=val; });
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
   try{localStorage.removeItem('nutriengine_autosave');}catch(e){}
   calcAll(); calcBodyComp(); calcMacros();
+  calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
 }
 
 function newClient(){
