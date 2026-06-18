@@ -261,12 +261,22 @@ tr:hover td { background: var(--bg-hover); }
   tr { page-break-inside: avoid; break-inside: avoid; }
 
   /* ── 7-Day plan landscape ── */
+  /* FIX (2026-06): the table was overflowing the printable page width and
+     silently clipping the 7th day (Sunday) off the right edge — the
+     on-screen wrapper div has inline overflow-x:auto (fine for screen
+     scrolling) but print has no scrolling, and table-layout:auto let the
+     8-column table (label + 7 days) grow past the page. Forcing the
+     wrapper to overflow:visible and the table to table-layout:fixed with
+     explicit column widths guarantees every column fits on the page. */
   #sevenday-body { overflow: visible !important; }
-  #sevenday-body table { font-size: 8px !important; }
-  #sevenday-body th { font-size: 8px !important; padding: 4px 3px !important; }
-  #sevenday-body td { font-size: 8px !important; padding: 3px !important; min-width: 0 !important; }
+  #sevenday-body > div { overflow: visible !important; width: auto !important; }
+  #sevenday-body table { font-size: 7px !important; table-layout: fixed !important; width: 100% !important; }
+  #sevenday-body th:first-child, #sevenday-body td:first-child { width: 8% !important; }
+  #sevenday-body th:not(:first-child), #sevenday-body td:not(:first-child) { width: 13.14% !important; }
+  #sevenday-body th { font-size: 7px !important; padding: 3px 2px !important; }
+  #sevenday-body td { font-size: 7px !important; padding: 2px !important; min-width: 0 !important; overflow-wrap: break-word !important; word-break: break-word !important; }
   #sevenday-body select { display: none !important; }
-  #sevenday-body div { display: block !important; font-size: 8px !important; }
+  #sevenday-body div { display: block !important; font-size: 7px !important; }
   /* Day total row */
   #sevenday-body tr:last-child td { background: #e6f7f2 !important; font-weight: 700 !important; }
 
@@ -308,12 +318,21 @@ tr:hover td { background: var(--bg-hover); }
   #vitamin-suggestions table { font-size: 9px !important; }
 
   /* ── Hide interactive elements ── */
-  .nav-badge, .card-action, select, input[type="number"],
-  input[type="checkbox"], input[type="date"], input[type="email"],
+  .nav-badge, .card-action, select, input[type="number"], input[type="text"],
+  input:not([type]), input[type="checkbox"], input[type="date"], input[type="email"],
   input[type="password"], textarea, button { display: none !important; }
   /* Keep print-keep buttons */
   button.print-keep { display: inline-block !important; }
+
+  /* ── Print-twins: plain-text copies of number-input/textarea values ──
+     (see injectPrintTwins() in JS) so typed lab values, profile numbers,
+     and free-text clinical notes are never silently lost just because the
+     interactive input/textarea itself is hidden above. */
+  .print-twin { display: inline !important; color: #000 !important;
+    font-size: 11px !important; white-space: pre-wrap !important; }
 }
+/* Print-twins must stay invisible on screen — they only exist for print */
+.print-twin { display: none; }
 
 /* ─── RESPONSIVE — TABLET ─── */
 @media (max-width: 900px) {
@@ -545,7 +564,9 @@ tr:hover td { background: var(--bg-hover); }
         <div class="form-grid three">
           <div class="form-field"><label>Height (cm)</label><input type="number" id="p-height" placeholder="170" oninput="calcAll()"></div>
           <div class="form-field"><label>Weight (kg)</label><input type="number" id="p-weight" placeholder="70" step="0.1" oninput="calcAll()"></div>
-          <div class="form-field"><label>Calorie Adjustment (kcal)</label><input type="number" id="p-cal-adj" placeholder="Auto (0)" step="50" oninput="calcAll()"></div>
+          <div class="form-field"><label>Calorie Adjustment (kcal)</label><input type="number" id="p-cal-adj" placeholder="Auto (0)" step="50" oninput="calcAll()">
+            <div class="field-note" id="cal-adj-note" style="margin-top:4px"></div>
+          </div>
         </div>
         <div class="section-label">CLINICAL SETTINGS</div>
         <div class="form-grid">
@@ -738,20 +759,21 @@ tr:hover td { background: var(--bg-hover); }
         </div>
         <div class="form-grid three" style="margin-bottom:16px">
           <div class="form-field"><label>🍎 Σνακ 1 / Snack 1</label>
-            <select id="s-snack1" onchange="buildOneDayPlan()"></select>
+            <div id="s-snack1" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
           </div>
           <div class="form-field"><label>🍊 Σνακ 2 / Snack 2</label>
-            <select id="s-snack2" onchange="buildOneDayPlan()"></select>
+            <div id="s-snack2" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
           </div>
           <div class="form-field"><label>😴 Πριν τον ύπνο / Before sleep</label>
-            <select id="s-sleep" onchange="buildOneDayPlan()"></select>
+            <div id="s-sleep" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
           </div>
         </div>
+        <div class="field-note" style="margin-bottom:12px">Tick any combination of items for each snack (e.g. fruit + yogurt + nuts together) — totals update automatically to match Exchange System servings.</div>
         <div id="oneday-plan"></div>
         <div class="section-label">EXCHANGE COVERAGE CHECK</div>
         <div id="oneday-check"></div>
         <div style="margin-top:14px;display:flex;gap:8px;">
-          <button class="btn primary" onclick="buildReport();setTimeout(()=>window.print(),300)">🖨️ Print plan</button>
+          <button class="btn primary" onclick="printPage()">🖨️ Print plan</button>
           <button class="btn" onclick="nav('report')">Full report →</button>
         </div>
       </div>
@@ -797,7 +819,7 @@ tr:hover td { background: var(--bg-hover); }
     <div class="card">
       <div class="card-header"><span class="card-title">📈 TRACKING — Progress / Body Composition History</span></div>
       <div class="card-body">
-        <div class="alert info">ℹ️ Log each visit's measurements. Data is saved during this session.</div>
+        <div class="alert info">ℹ️ <strong>For follow-up visits:</strong> load the client from "My Clients", come here, add a new entry below for today's visit, then go to Client Profile and click "💾 Save Client" to keep this update permanently.</div>
         <div class="form-grid three" style="margin-bottom:14px">
           <div class="form-field"><label>Visit Date</label><input type="date" id="t-date"></div>
           <div class="form-field"><label>Weight (kg)</label><input type="number" id="t-weight" step="0.1" placeholder="—"></div>
@@ -807,6 +829,7 @@ tr:hover td { background: var(--bg-hover); }
           <div class="form-field"><label>Notes</label><input type="text" id="t-notes" placeholder="Session notes…"></div>
         </div>
         <button class="btn primary" onclick="addTracking()">+ Log Visit</button>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:10px">↳ After logging, remember to Save Client to keep it</span>
         <div class="section-label">PROGRESS CHARTS</div>
         <div id="tracking-chart"></div>
         <div class="section-label">VISIT HISTORY</div>
@@ -821,6 +844,7 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-header"><span class="card-title">⚙️ ENGINE CONTROL — Live Safety & Integrity Checks</span></div>
       <div class="card-body">
         <div class="alert warn">⚠️ Print plans only after all checks are READY or reviewed by the clinician. This does not replace clinical judgement.</div>
+        <div id="cap-conflict-banner"></div>
         <table><thead><tr><th>Check</th><th>Live Value</th><th>Status</th><th>Why this matters</th></tr></thead><tbody id="engine-table"></tbody></table>
         <div class="section-label" style="margin-top:16px">OVERALL STATUS</div>
         <div id="engine-overall"></div>
@@ -859,7 +883,7 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-body">
         <div class="alert info">ℹ️ Enter available lab values. Reference ranges are general adult ranges — always confirm against the lab's own reference range. Status updates live as you type.</div>
         <div id="labs-table"></div>
-        <div class="section-label">SUGGESTED VITAMINS & MINERALS</div>
+        <div class="section-label">NUTRIENTS TO CONSIDER (CLINICAL REFERENCE ONLY)</div>
         <div id="vitamin-suggestions"></div>
       </div>
     </div>
@@ -877,7 +901,7 @@ tr:hover td { background: var(--bg-hover); }
             <button class="btn" id="eq-btn-en" onclick="setEquivalentsLang('en')">English</button>
             <button class="btn primary" id="eq-btn-both" onclick="setEquivalentsLang('both')">Both / Και τα δύο</button>
           </div>
-          <button class="btn" onclick="buildEquivalents();setTimeout(()=>window.print(),300)">🖨️ Print for client</button>
+          <button class="btn" onclick="printPage()">🖨️ Print for client</button>
         </div>
       </div>
     </div>
@@ -1016,6 +1040,53 @@ function getFruitDistribution(){
 // bed); any servings beyond what fits there spill into snack1.
 // This guarantees the FULL S.ex.dairy amount is always reflected somewhere
 // in the meal plan, never silently fixed at 1 regardless of input.
+// ── SNACK BUILDING BLOCKS ──
+// Each snack slot (Snack 1, Snack 2, Before Sleep) can now combine MULTIPLE
+// components — e.g. fruit + yogurt + nuts in the same snack — instead of
+// being limited to one single option. This matches how dietitians actually
+// build snacks to meet remaining daily calorie/exchange needs.
+const SNACK_BLOCKS = [
+  {v:'fruit',      l:'🍎 Φρούτο',           exch:{fruit:1}, dynamic:'fruit'},
+  {v:'driedfruit', l:'🍇 Αποξηραμένα φρούτα', exch:{fruit:1}, text:'2 κ.σ. αποξηραμένα φρούτα'},
+  {v:'crackers',   l:'🍘 Κράκερ ολικής',     exch:{starch:1}, text:'3 κράκερ ολικής άλεσης'},
+  {v:'oatbar',     l:'🥣 Μπάρα βρώμης',      exch:{starch:1,fat:0.5}, text:'1 μπάρα βρώμης/δημητριακών'},
+  {v:'nuts',       l:'🥜 Ξηροί καρποί',      exch:{fat:1}, text:'6 αμύγδαλα ή 4 καρύδια'},
+  {v:'milk',       l:'🥛 Γάλα',             exch:{dairy:1}, dynamic:'dairy'},
+  {v:'yogurt',     l:'🍦 Γιαούρτι 2%',       exch:{dairy:1}, text:'1 γιαούρτι 2% (170g)'},
+  {v:'coffee',     l:'☕ Καφές (σκέτος)',     exch:{}, text:'Καφές χωρίς ζάχαρη'},
+];
+function snackBlockOptionsHtml(){
+  return SNACK_BLOCKS.map(b=>`<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="${b.v}" style="width:auto"> ${b.l}</label>`).join('');
+}
+
+// Applies sensible default snack selections based on what's actually in the
+// Exchange System — e.g. if dairy servings exist, automatically tick "milk"
+// or "yogurt" on a snack slot so the full amount is used without the
+// clinician needing to manually configure every checkbox from scratch.
+function applySmartSnackDefaults(){
+  const fruitTotal = S.ex ? (S.ex.fruit||2) : 2;
+  const dairyTotal = S.ex ? (S.ex.dairy||0) : 0;
+  const snk1Fruit = document.querySelector('#s-snack1 input[value="fruit"]');
+  if(snk1Fruit && fruitTotal>1) snk1Fruit.checked=true;
+  const sleepMilk = document.querySelector('#s-sleep input[value="milk"]');
+  if(sleepMilk && dairyTotal>0) sleepMilk.checked=true;
+  const snk2Fruit = document.querySelector('#s-snack2 input[value="fruit"]');
+  if(snk2Fruit && fruitTotal>2) snk2Fruit.checked=true;
+}
+
+// Reads which checkboxes are ticked in a snack slot's checkbox group
+function getSnackSelection(elId){
+  const el=document.getElementById(elId);
+  if(!el) return [];
+  return Array.from(el.querySelectorAll('input[type=checkbox]:checked')).map(cb=>cb.value);
+}
+
+// Distributes total dairy servings across breakfast (only if BRK_CEREAL is
+// selected, which already includes 1 dairy), snack1, and before-sleep.
+// "Before sleep" gets priority (clinically common — calcium/protein before
+// bed); any servings beyond what fits there spill into snack1.
+// This guarantees the FULL S.ex.dairy amount is always reflected somewhere
+// in the meal plan, never silently fixed at 1 regardless of input.
 function getDairyDistribution(){
   const total = S.ex ? (S.ex.dairy||0) : 0;
   const brkUsesDairy = (S.mealSel && S.mealSel.breakfast==='BRK_CEREAL') ? 1 : 0;
@@ -1026,12 +1097,37 @@ function getDairyDistribution(){
   return {brk: brkUsesDairy, sleep, snk1};
 }
 
+// Calculates the combined exchange composition + display text for a snack
+// slot given its selected building-block components (array of block keys)
+function buildSnackFromBlocks(blockKeys, fruitCount, dairyCount){
+  if(!blockKeys || !blockKeys.length) return {exch:{fruit:0,starch:0,fat:0,dairy:0}, text:'—', hasFruit:false, hasDairy:false};
+  const exch = {fruit:0, starch:0, fat:0, dairy:0};
+  const parts = [];
+  let hasFruit=false, hasDairy=false;
+  blockKeys.forEach(key=>{
+    const b = SNACK_BLOCKS.find(x=>x.v===key);
+    if(!b) return;
+    if(b.dynamic==='fruit'){ hasFruit=true; return; } // handled separately via fruitCount
+    if(b.dynamic==='dairy'){ hasDairy=true; return; } // handled separately via dairyCount
+    Object.keys(b.exch).forEach(k=>exch[k]=(exch[k]||0)+b.exch[k]);
+    parts.push(b.text);
+  });
+  if(hasFruit && fruitCount>0){ exch.fruit+=fruitCount; parts.unshift(`${fruitCount} φρούτ${fruitCount>1?'α':'ο'}`); }
+  if(hasDairy && dairyCount>0){
+    const cupTxt = dairyCount===0.5?'½ φλ.':dairyCount===1?'1 φλ.':dairyCount===1.5?'1½ φλ.':`${dairyCount} φλ.`;
+    exch.dairy+=dairyCount;
+    parts.unshift(`${cupTxt} γάλα 1,5%`);
+  }
+  return {exch, text: parts.length?parts.join(' + '):'—', hasFruit, hasDairy};
+}
+
 const MEALS = {
   BRK_TOAST:       (ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + αγγούρι / ντοματίνια + ${f} φρούτ${f>1?'α':'ο'}`; },
   BRK_TOAST_TURKEY:(ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + 1 φέτα γαλοπούλα + αγγούρι + ${f} φρούτ${f>1?'α':'ο'}`; },
   BRK_EGGS:        (ex,p) => { const f=getFruitDistribution().brk; return `2 αυγά βραστά/ποσέ + 1 φέτα ψωμί ολικής + αγγούρι / ντομάτα + ${f} φρούτ${f>1?'α':'ο'}`; },
   BRK_EGGS_TOAST:  (ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 αυγό + 1 φέτα τυρί light + ${f} φρούτ${f>1?'α':'ο'}`; },
   BRK_CEREAL:      (ex,p) => { const f=getFruitDistribution().brk; return `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. γάλα 1,5% + ${f} φρούτ${f>1?'α':'ο'}`; },
+  BRK_OATS_VEGAN:  (ex,p) => { const f=getFruitDistribution().brk; return `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. εμπλουτισμένο φυτικό γάλα (αμύγδαλο/σόγια) + ${f} φρούτ${f>1?'α':'ο'}`; },
   LUN_CHICKEN_RICE:   (ex,p) => 'Κοτόπουλο + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
   LUN_FISH_POTATO:    (ex,p) => 'Ψάρι + πατάτα' + mealSuffix(ex,p,'σαλάτα'),
   LUN_LOUVI_TUNA:     (ex,p) => 'Λουβί + τόνος' + mealSuffix(ex,p,'σαλάτα / χόρτα'),
@@ -1046,16 +1142,16 @@ const MEALS = {
   DIN_PASTA_MINCE:    (ex,p) => 'Μακαρόνια + κιμάς' + mealSuffix(ex,p,'σαλάτα'),
   DIN_SOUVLAKI_PITA:  (ex,p) => 'Σουβλάκι κοτόπουλο + κυπριακή πίτα – σαλάτα (2 φλ.)',
   DIN_BIFTEKI_BULGUR: (ex,p) => 'Μπιφτέκι + πλιγούρι' + mealSuffix(ex,p,'σαλάτα'),
-  LUN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα', n=>`${n} μερίδ${n>1?'ες':'α'} φακές (½ φλ. μαγειρεμένες ανά μερίδα)`),
   LUN_CHICKPEA_STEW:  (ex,p) => 'Ρεβίθια γιαχνί + ψωμί ολικής – σαλάτα (2 φλ.)',
-  LUN_TOFU_RICE:      (ex,p) => 'Τόφου σαλτέ με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
-  LUN_HALLOUMI_PASTA: (ex,p) => 'Χαλούμι ψητό + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα'),
+  LUN_TOFU_RICE:      (ex,p) => 'Τόφου σαλτέ με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα', n=>`${n*30}g τόφου σφιχτό`),
+  LUN_HALLOUMI_PASTA: (ex,p) => 'Χαλούμι ψητό + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα', n=>`${n*30}g χαλούμι ψητό`),
   LUN_BEAN_SALAD:     (ex,p) => 'Φασόλια σαλάτα + ελαιόλαδο + ψωμί ολικής – σαλάτα (2 φλ.)',
-  DIN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
-  DIN_TOFU_STIRFRY:   (ex,p) => 'Τόφου stir-fry με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
+  DIN_LENTILS_RICE:   (ex,p) => 'Φακές γιαχνί + ρύζι' + mealSuffix(ex,p,'σαλάτα', n=>`${n} μερίδ${n>1?'ες':'α'} φακές (½ φλ. μαγειρεμένες ανά μερίδα)`),
+  DIN_TOFU_STIRFRY:   (ex,p) => 'Τόφου stir-fry με λαχανικά + ρύζι' + mealSuffix(ex,p,'σαλάτα', n=>`${n*30}g τόφου σφιχτό`),
   DIN_CHICKPEA_STEW:  (ex,p) => 'Ρεβίθια γιαχνί + ψωμί ολικής – σαλάτα (2 φλ.)',
   DIN_HALLOUMI_SALAD: (ex,p) => 'Χαλούμι ψητό + σαλάτα μεγάλη (3 φλ.) + ψωμί ολικής',
-  DIN_BEAN_PASTA:     (ex,p) => 'Φασόλια + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα'),
+  DIN_BEAN_PASTA:     (ex,p) => 'Φασόλια + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα', n=>`${n} μερίδ${n>1?'ες':'α'} φασόλια (½ φλ. μαγειρεμένα ανά μερίδα)`),
 };
 
 // ── MEAL EXCHANGE COSTS ──
@@ -1072,6 +1168,7 @@ const MEAL_EXCHANGES = {
   BRK_EGGS:        {protein:2, starch:1, fat:0, fruit:1, dairy:0, veg:0}, // 2 eggs = 2 protein, 1 bread
   BRK_EGGS_TOAST:  {protein:2, starch:2, fat:0, fruit:1, dairy:0, veg:0}, // egg+cheese = 2 protein
   BRK_CEREAL:      {protein:0, starch:2, fat:0, fruit:1, dairy:1, veg:0},
+  BRK_OATS_VEGAN:  {protein:0, starch:2, fat:0, fruit:1, dairy:1, veg:0}, // fortified plant milk counted as dairy exchange (see Equivalents Guide)
   // Main meals: base veg only — starch/protein/fat added dynamically from getMealPortions()
   LUN_CHICKEN_RICE:   {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
   LUN_FISH_POTATO:    {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
@@ -1101,7 +1198,7 @@ const MEAL_EXCHANGES = {
   DIN_BEAN_PASTA:     {protein:2, starch:0, fat:1, fruit:0, dairy:0, veg:1},
 };
 
-// Exchange costs for each snack option
+// Exchange costs for each snack option (LEGACY — see SNACK_OPTIONS note above; superseded by buildSnackFromBlocks)
 const SNACK_EXCHANGES = {
   SNK_FRUIT:       {fruit:1, starch:0, fat:0, dairy:0},
   SNK_SMALLFRUIT:  {fruit:1, starch:0, fat:0, dairy:0},
@@ -1153,27 +1250,24 @@ function calcDayTotals(){
   const brkComp  = MEAL_EXCHANGES[ms.breakfast] || {};
   const lunComp  = MEAL_EXCHANGES[ms.lunch]     || {};
   const dinComp  = MEAL_EXCHANGES[ms.dinner]    || {};
-  const snk1Comp = SNACK_EXCHANGES[ms.snack1||'SNK_FRUIT'] || {};
-  const snk2Comp = SNACK_EXCHANGES[ms.snack2||'SNK_SMALLFRUIT'] || {};
-  const slpComp  = SNACK_EXCHANGES[ms.sleep||'SNK_MILK'] || {};
 
-  // Use getFruitDistribution()/getDairyDistribution() so kcal totals match
-  // exactly what's shown on screen — never fixed regardless of input
+  // Snack slots are now arrays of building-block keys (e.g. ['fruit','yogurt','nuts'])
+  // rather than a single option — buildSnackFromBlocks() sums their exchange cost.
   const dist = getFruitDistribution();
   const dairyDist = getDairyDistribution();
-  const isFruitSnk1=['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(ms.snack1||'SNK_FRUIT');
-  const isFruitSnk2=['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(ms.snack2||'SNK_SMALLFRUIT');
-  const isDairySnk1=['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(ms.snack1||'');
-  const isDairySleep=['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(ms.sleep||'SNK_MILK');
+  const snk1Blocks = ms.snack1blocks || [];
+  const snk2Blocks = ms.snack2blocks || [];
+  const slpBlocks  = ms.sleepblocks  || [];
+  const snk1Built = buildSnackFromBlocks(snk1Blocks, dist.snk1, dairyDist.snk1);
+  const snk2Built = buildSnackFromBlocks(snk2Blocks, dist.snk2, 0);
+  const slpBuilt  = buildSnackFromBlocks(slpBlocks, 0, dairyDist.sleep);
 
   const brkKcal  = exchangesToKcal({...brkComp, fruit: dist.brk}, null);
   const lunKcal  = exchangesToKcal(lunComp, portions.lunch);
   const dinKcal  = exchangesToKcal(dinComp, portions.dinner);
-  const snk1Kcal = isFruitSnk1 ? exchangesToKcal(snk1Comp, null, dist.snk1)
-                  : isDairySnk1 ? exchangesToKcal(snk1Comp, null, undefined, dairyDist.snk1)
-                  : exchangesToKcal(snk1Comp, null);
-  const snk2Kcal = isFruitSnk2 ? exchangesToKcal(snk2Comp, null, dist.snk2) : exchangesToKcal(snk2Comp, null);
-  const slpKcal  = isDairySleep ? exchangesToKcal(slpComp, null, undefined, dairyDist.sleep) : exchangesToKcal(slpComp, null);
+  const snk1Kcal = exchangesToKcal(snk1Built.exch, null);
+  const snk2Kcal = exchangesToKcal(snk2Built.exch, null);
+  const slpKcal  = exchangesToKcal(slpBuilt.exch, null);
   const totalKcal = brkKcal + lunKcal + dinKcal + snk1Kcal + snk2Kcal + slpKcal;
   const target = Math.round(S.goalKcal||0);
   const gap = totalKcal - target;
@@ -1192,18 +1286,24 @@ function formatCups(exCount) {
   return `${whole} ${fracMap[rem]}`;
 }
 
-function mealSuffix(ex, p, veg) {
+function mealSuffix(ex, p, veg, proteinSource) {
   p = p || {prot:0, starch:0, fat:0, veg:undefined};
   const parts = [];
   if (p.prot > 0) {
-    // Clinical standard: 1 protein exchange ≈ 30g cooked lean meat/fish (1 oz).
-    // However, a realistic serving for main meals is 4 exchanges (120g) for
-    // chicken/meat and 4-5 exchanges (120-150g) for fish.
-    // We scale grams per exchange based on the clinician's PRO/ex setting.
-    const proPerEx = (S.exMeta && S.exMeta.protein.pro) || 7;
-    const gramsPerEx = Math.round(30 * (proPerEx/7));
-    const totalGrams = p.prot * gramsPerEx;
-    parts.push(`${totalGrams}g μαγειρεμένο κρέας/κοτόπουλο (ή ${Math.round(totalGrams*1.15)}g ψάρι)`);
+    if(proteinSource){
+      // Vegetarian/vegan meals specify their own protein source text
+      // (tofu, halloumi, etc.) instead of the default meat/fish wording
+      parts.push(proteinSource(p.prot));
+    } else {
+      // Clinical standard: 1 protein exchange ≈ 30g cooked lean meat/fish (1 oz).
+      // However, a realistic serving for main meals is 4 exchanges (120g) for
+      // chicken/meat and 4-5 exchanges (120-150g) for fish.
+      // We scale grams per exchange based on the clinician's PRO/ex setting.
+      const proPerEx = (S.exMeta && S.exMeta.protein.pro) || 7;
+      const gramsPerEx = Math.round(30 * (proPerEx/7));
+      const totalGrams = p.prot * gramsPerEx;
+      parts.push(`${totalGrams}g μαγειρεμένο κρέας/κοτόπουλο (ή ${Math.round(totalGrams*1.15)}g ψάρι)`);
+    }
   }
   if (p.starch > 0) parts.push(`${p.starch} μερίδ${p.starch===1?'α':'ες'} αμύλου — π.χ. ${formatCups(p.starch)} φλ. ρύζι/ζυμαρικά ή πατάτα μαγειρεμένα (δες Οδηγό Ισοδυναμιών για άλλες επιλογές)`);
   if (p.fat > 0)    parts.push(`${p.fat} κ.γ. ελαιόλαδο`);
@@ -1242,12 +1342,48 @@ function printPage(){
     // Portrait: client-facing documents
     styleEl.textContent = '@media print { @page { size: A4 portrait; margin: 14mm 16mm; } }';
     if(isReport){ buildReport(); }
+    if(isEquivalents){ buildEquivalents(); }
   } else {
     // Landscape: clinical working pages (7-day, 1-day, blood analysis, etc.)
     styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 8mm 10mm; } }';
   }
+  // FIX (2026-06): number inputs (lab values, age/height/weight, macro %,
+  // exchange grams) and textareas (Clinical Notes, Client Intake free text)
+  // were blanket-hidden by the print stylesheet with no fallback — the
+  // typed content silently vanished from the printed/PDF page entirely,
+  // even though it's often the whole point of printing that page (e.g.
+  // Blood Analysis values, clinical notes). Inject a plain-text "twin" of
+  // every visible, non-empty field right before printing, since textareas
+  // in particular don't reliably expand to show full content via CSS alone
+  // (height:auto doesn't work on native textareas in print).
+  injectPrintTwins(activePage);
   setTimeout(()=>window.print(), 300);
 }
+
+// Inserts a plain-text copy directly after each visible, non-empty
+// input/textarea on the given page, shown only in print (see .print-twin
+// CSS) — ensures typed content is never silently lost when printed.
+function injectPrintTwins(container){
+  if(!container) return;
+  removePrintTwins(container);
+  const fields = container.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])');
+  fields.forEach(el=>{
+    if(el.offsetParent===null) return; // skip hidden/inactive fields
+    const val = (el.value||'').trim();
+    if(!val) return; // nothing to show — avoid empty clutter on the printout
+    const twin=document.createElement('span');
+    twin.className='print-twin';
+    twin.textContent = val;
+    el.insertAdjacentElement('afterend', twin);
+  });
+}
+function removePrintTwins(container){
+  (container||document).querySelectorAll('.print-twin').forEach(t=>t.remove());
+}
+// Clean up print-twins again after the print dialog closes/prints, so they
+// don't linger in the live DOM (e.g. would otherwise duplicate values if
+// printed twice without a page reload in between).
+window.addEventListener('afterprint', ()=>removePrintTwins(document));
 
 // ── DIET TYPE ──
 // Maps each diet type to which meal keys are allowed.
@@ -1258,7 +1394,11 @@ const DIET_RESTRICTIONS = {
   Omnivore:    null, // no restrictions
   Pescatarian: {excludeKeys:['LUN_CHICKEN_RICE','LUN_FASOLAKIA_PORK','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','BRK_TOAST_TURKEY']},
   Vegetarian:  {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','BRK_TOAST_TURKEY']},
-  Vegan:       {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','DIN_OMELETTE','BRK_TOAST_TURKEY','BRK_EGGS','BRK_EGGS_TOAST','LUN_HALLOUMI_PASTA','DIN_HALLOUMI_SALAD','BRK_CEREAL']}, // BRK_CEREAL uses dairy milk; vegan clients should use plant milk (clinician note applies)
+  // FIX (2026-06): BRK_TOAST now also excluded for Vegan — it contains
+  // "1 φέτα τυρί light" (light cheese), which is a dairy product and was
+  // incorrectly left as the only available Vegan breakfast option before
+  // BRK_OATS_VEGAN (fortified plant milk) was added above.
+  Vegan:       {excludeKeys:['LUN_CHICKEN_RICE','LUN_FISH_POTATO','LUN_LOUVI_TUNA','LUN_FASOLAKIA_PORK','LUN_TUNA_POTATO','LUN_PASTA_MINCE','LUN_BIFTEKI_BULGUR','DIN_CHICKEN_RICE','DIN_FISH_POTATO','DIN_TUNA_POTATO','DIN_PASTA_MINCE','DIN_SOUVLAKI_PITA','DIN_BIFTEKI_BULGUR','DIN_OMELETTE','BRK_TOAST_TURKEY','BRK_TOAST','BRK_EGGS','BRK_EGGS_TOAST','LUN_HALLOUMI_PASTA','DIN_HALLOUMI_SALAD','BRK_CEREAL']}, // BRK_CEREAL uses dairy milk; BRK_OATS_VEGAN (fortified plant milk) is the vegan-compliant oats option
 };
 
 // Filters meal option lists based on diet type
@@ -1418,6 +1558,7 @@ const BREAKFAST_OPTIONS = [
   {v:'BRK_EGGS',         l:'Αυγά βραστά + ψωμί'},
   {v:'BRK_EGGS_TOAST',   l:'Τοστ (αυγό + τυρί)'},
   {v:'BRK_CEREAL',       l:'Βρώμη + γάλα'},
+  {v:'BRK_OATS_VEGAN',   l:'Βρώμη + φυτικό γάλα 🌱'},
 ];
 const LUNCH_OPTIONS = [
   {v:'LUN_CHICKEN_RICE',   l:'Κοτόπουλο + ρύζι'},
@@ -1451,7 +1592,13 @@ function mealOptionsHtml(options, current){
   return options.map(o=>`<option value="${o.v}" ${o.v===current?'selected':''}>${o.l}</option>`).join('');
 }
 
-// ── SNACK OPTIONS ──
+// ── SNACK OPTIONS (LEGACY — superseded by SNACK_BLOCKS) ──
+// NOTE (2026-06): this single-snack-code system is no longer used for kcal
+// calculations or display anywhere in the app — snacks are now built from
+// SNACK_BLOCKS (multi-component checkboxes) everywhere (1-Day Plan, 7-Day
+// Plan, Client Report). Kept here only in case per-day snack variety across
+// the 7-Day Plan is reintroduced later; do not wire this back in without
+// also updating calcDayTotalsForPlan/buildReport consistently.
 // Each option maps to a roughly-equivalent exchange portion (fruit, starch,
 // fat, or dairy) so swapping snacks keeps the day's totals realistic.
 // To add more later: add a {v, l, text} entry — both 1-Day and 7-Day pick it up.
@@ -1677,7 +1824,12 @@ const COND_CAP_OVERRIDES = {
   Obesity:      { fatDailyMax:5, fatPerMealMax:2 },                   // calorie density control
 };
 
-// Returns CAPS adjusted to the most restrictive value across all selected conditions
+// Returns CAPS adjusted to the most restrictive value across all selected
+// conditions. NOTE: this still computes the mathematical minimum as a
+// starting point shown in Exchange System, but does NOT silently apply it —
+// see getCapConflicts() below, which surfaces any disagreement between
+// conditions so the clinician explicitly decides how to resolve it,
+// rather than the software making that clinical judgment automatically.
 function getEffectiveCaps(conditions) {
   const eff = {...CAPS};
   (conditions||[]).forEach(c => {
@@ -1685,6 +1837,33 @@ function getEffectiveCaps(conditions) {
     if (ov) Object.keys(ov).forEach(k => { eff[k] = Math.min(eff[k], ov[k]); });
   });
   return eff;
+}
+
+// Detects when two or more selected conditions specify DIFFERENT caps for
+// the same macro category (e.g. CKD says protein≤6 while Hemodialysis says
+// protein≤8) — this is a genuine clinical conflict that should be flagged
+// for the dietitian to resolve, not silently auto-minimized.
+function getCapConflicts(conditions) {
+  const list = conditions||[];
+  if (list.length < 2) return [];
+  const byKey = {}; // key -> [{cond, value}]
+  list.forEach(c => {
+    const ov = COND_CAP_OVERRIDES[c];
+    if (!ov) return;
+    Object.keys(ov).forEach(k => {
+      if (!byKey[k]) byKey[k] = [];
+      byKey[k].push({cond:c, value:ov[k]});
+    });
+  });
+  const conflicts = [];
+  Object.keys(byKey).forEach(k => {
+    const entries = byKey[k];
+    const values = [...new Set(entries.map(e=>e.value))];
+    if (values.length > 1) {
+      conflicts.push({metric:k, entries, suggestedMin: Math.min(...values)});
+    }
+  });
+  return conflicts;
 }
 
 // Combines clinical guidance text from all selected conditions into one panel
@@ -1829,19 +2008,44 @@ function calcAll() {
   if(age&&h&&w){
     bmr=sex==='M'?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161;
     S.bmr=bmr; tdee=bmr*act; S.tdee=tdee;
+    // FIX (2026-06): the comment below always said pregnancy shouldn't get
+    // caloric restriction, but the code didn't actually enforce it — a
+    // pregnant client with Goal="Weight Loss" still got -500 kcal applied
+    // (e.g. TDEE -500 +340 trimester-2 addition = still a net deficit).
+    // Per ACOG/DGA, goal-driven auto deficit/surplus is now suppressed
+    // entirely during pregnancy; only the trimester-based addition applies
+    // by default. A clinician can still type a manual override if medically
+    // indicated — that case is flagged below and in Engine Control.
+    const isPregnant = S.conditions.includes('Pregnancy');
     let autoAdj=0;
-    if(goal==='Weight Loss') autoAdj=-500;
-    else if(goal==='Weight Gain'||goal==='Muscle Gain') autoAdj=300;
+    if(!isPregnant){
+      if(goal==='Weight Loss') autoAdj=-500;
+      else if(goal==='Weight Gain'||goal==='Muscle Gain') autoAdj=300;
+    }
     // Pregnancy: additional energy needs per trimester (ACOG/DGA), added on
     // top of any other adjustment — caloric restriction is not recommended
     // during pregnancy regardless of starting BMI/goal.
     let pregAdj=0;
-    if(S.conditions.includes('Pregnancy')){
+    if(isPregnant){
       const tri=v('p-trimester')||'1';
       if(tri==='2') pregAdj=340;
       else if(tri==='3') pregAdj=450;
     }
     goalKcal=tdee+(calAdj!==0?calAdj:autoAdj)+pregAdj; S.goalKcal=goalKcal;
+    S.isPregnant=isPregnant;
+    S.pregnancyManualDeficit = isPregnant && calAdj<0; // flagged in Engine Control
+    const noteEl=document.getElementById('cal-adj-note');
+    if(noteEl){
+      if(calAdj!==0){
+        noteEl.textContent = isPregnant
+          ? `Manual override: ${calAdj>0?'+':''}${calAdj} kcal + ${pregAdj} kcal (pregnancy trimester ${v('p-trimester')||'1'})${calAdj<0?' — ⚠ this is a caloric deficit during pregnancy; ACOG/DGA guidance recommends against this unless specifically medically indicated':''}.`
+          : `Manual override: ${calAdj>0?'+':''}${calAdj} kcal (auto would be ${autoAdj>0?'+':''}${autoAdj}${pregAdj?` +${pregAdj} pregnancy`:''})`;
+      } else if(isPregnant){
+        noteEl.textContent = `Auto-applied: +0 kcal base adjustment (ACOG/DGA: no caloric restriction or goal-driven surplus during pregnancy) + ${pregAdj} kcal (pregnancy trimester ${v('p-trimester')||'1'}). Goal "${goal}" is intentionally NOT applied as a deficit/surplus while pregnant. Type a number above only if a deficit/surplus is specifically medically indicated.`;
+      } else {
+        noteEl.textContent = `Auto-applied: ${autoAdj>0?'+':''}${autoAdj} kcal for "${goal}". Type a number above to override.`;
+      }
+    }
   }
   setEl('r-bmi',bmi?bmi.toFixed(1):'—'); setEl('r-bmi-cat',bmiCat||'—');
   setEl('r-bmr',bmr?Math.round(bmr):'—'); setEl('r-tdee',tdee?Math.round(tdee):'—');
@@ -2131,18 +2335,22 @@ function saveBodyComp(){
 
 function buildOneDayPlan(){
   const brk=v('s-breakfast')||'BRK_TOAST', lun=v('s-lunch')||'LUN_CHICKEN_RICE', din=v('s-dinner')||'DIN_FISH_POTATO';
-  const snk1=v('s-snack1')||'SNK_FRUIT', snk2=v('s-snack2')||'SNK_SMALLFRUIT', sleepSel=v('s-sleep')||'SNK_MILK';
-  S.mealSel={breakfast:brk,lunch:lun,dinner:din,snack1:snk1,snack2:snk2,sleep:sleepSel};
+  const snk1Blocks=getSnackSelection('s-snack1'), snk2Blocks=getSnackSelection('s-snack2'), slpBlocks=getSnackSelection('s-sleep');
+  S.mealSel={breakfast:brk,lunch:lun,dinner:din,snack1blocks:snk1Blocks,snack2blocks:snk2Blocks,sleepblocks:slpBlocks};
   const ex=S.ex;
   const portions=getMealPortions();
   const day=calcDayTotals();
+  const dist=getFruitDistribution(), dairyDist=getDairyDistribution();
+  const snk1Built=buildSnackFromBlocks(snk1Blocks, dist.snk1, dairyDist.snk1);
+  const snk2Built=buildSnackFromBlocks(snk2Blocks, dist.snk2, 0);
+  const slpBuilt=buildSnackFromBlocks(slpBlocks, 0, dairyDist.sleep);
   const meals=[
     {time:'Πρωινό',      en:'Breakfast',     text:MEALS[brk]?MEALS[brk](ex,null):'',              kcal:day.brkKcal},
-    {time:'Σνακ 1',      en:'Snack 1',       text:snackText(snk1,'snk1'),                                kcal:day.snk1Kcal},
+    {time:'Σνακ 1',      en:'Snack 1',       text:snk1Built.text,                                  kcal:day.snk1Kcal},
     {time:'Μεσημεριανό', en:'Lunch',         text:MEALS[lun]?MEALS[lun](ex,portions.lunch):'',    kcal:day.lunKcal},
-    {time:'Σνακ 2',      en:'Snack 2',       text:snackText(snk2,'snk2'),                                kcal:day.snk2Kcal},
+    {time:'Σνακ 2',      en:'Snack 2',       text:snk2Built.text,                                  kcal:day.snk2Kcal},
     {time:'Βραδινό',     en:'Dinner',        text:MEALS[din]?MEALS[din](ex,portions.dinner):'',   kcal:day.dinKcal},
-    {time:'Πριν τον ύπνο',en:'Before sleep', text:snackText(sleepSel,'sleep'),                            kcal:day.slpKcal},
+    {time:'Πριν τον ύπνο',en:'Before sleep', text:slpBuilt.text,                                   kcal:day.slpKcal},
   ];
   const planEl=document.getElementById('oneday-plan');
   if(planEl) planEl.innerHTML=meals.filter(m=>m.text&&m.text!=='—').map(m=>
@@ -2156,14 +2364,16 @@ function buildOneDayPlan(){
   const gapBadge=gapOk?'ok':gapAbs<=200?'warn':'err';
   let gapAdvice='';
   // Detect unused dairy capacity: if S.ex.dairy is higher than what's
-  // actually reflected in the snack slots (because no dairy-type snack was
-  // selected for snack1/snack2), tell the clinician exactly how to fix it.
+  // actually reflected in the snack slots (no dairy block ticked anywhere),
+  // tell the clinician exactly how to fix it.
   const dairyDistCheck = getDairyDistribution();
-  const usedDairySlots = [S.mealSel.snack1, S.mealSel.sleep].filter(s=>['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(s)).length;
-  const unusedDairy = (dairyDistCheck.snk1>0 && !['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(S.mealSel.snack1));
+  const snk1HasMilk = (S.mealSel.snack1blocks||[]).includes('milk');
+  const sleepHasMilk = (S.mealSel.sleepblocks||[]).includes('milk');
+  const sleepHasYogurt = (S.mealSel.sleepblocks||[]).includes('yogurt');
+  const unusedDairy = (dairyDistCheck.snk1>0 && !snk1HasMilk);
   if(unusedDairy){
     gapAdvice+=`<div style="margin-top:8px;padding:8px 12px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:var(--amber-text)">
-      🥛 <strong>Unused dairy capacity:</strong> Exchange System has ${S.ex.dairy} dairy servings set, but Snack 1 isn't a dairy option — change Snack 1 to "Γάλα" or "Γιαούρτι" to use the full amount.
+      🥛 <strong>Unused dairy capacity:</strong> Exchange System has ${S.ex.dairy} dairy servings set, but Snack 1 doesn't have "Γάλα" ticked — tick it to use the full amount.
     </div>`;
   }
   if(!gapOk && day.gap<0){
@@ -2202,50 +2412,43 @@ function buildOneDayPlan(){
 }
 
 // Calculates daily kcal totals for a specific day plan entry
-// (used by 7-Day plan where each day can have different meals)
+// (used by 7-Day plan where each day can have different main meals).
+// FIX (2026-06): snacks are now built from the SAME multi-component blocks
+// configured once in the 1-Day Plan (S.mealSel.snack1blocks/snack2blocks/
+// sleepblocks), instead of the old single-snack-code system (SNACK_EXCHANGES/
+// dayPlan.snk1 etc.), which was never updated when the multi-component
+// snack builder was added — it silently fell back to hardcoded defaults
+// (SNK_FRUIT/SNK_SMALLFRUIT/SNK_MILK) regardless of what was actually
+// ticked, causing the 7-Day Plan and Client Report to show/calc the wrong
+// snacks. Snacks are intentionally the SAME every day of the week (they're
+// derived from the daily exchange targets, which don't vary by day) —
+// only breakfast/lunch/dinner vary per day for menu rotation.
 function calcDayTotalsForPlan(dayPlan){
   const portions=getMealPortions();
-  const snk1=dayPlan.snk1||S.mealSel.snack1||'SNK_FRUIT';
-  const snk2=dayPlan.snk2||S.mealSel.snack2||'SNK_SMALLFRUIT';
-  const slp=dayPlan.sleep||S.mealSel.sleep||'SNK_MILK';
   const brkComp  = MEAL_EXCHANGES[dayPlan.brk] || {};
   const lunComp  = MEAL_EXCHANGES[dayPlan.lun] || {};
   const dinComp  = MEAL_EXCHANGES[dayPlan.din] || {};
-  const snk1Comp = SNACK_EXCHANGES[snk1] || {};
-  const snk2Comp = SNACK_EXCHANGES[snk2] || {};
-  const slpComp  = SNACK_EXCHANGES[slp]  || {};
-  // Use the same fruit/dairy distribution logic as the 1-Day plan, so every
-  // day in the 7-Day plan reflects the FULL S.ex.fruit/dairy amount —
-  // consistent with the 1-Day plan and never silently fixed.
   const dist = getFruitDistribution();
   const dairyDist = getDairyDistribution();
-  const isFruitSnk1=['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(snk1);
-  const isFruitSnk2=['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(snk2);
-  const isDairySnk1=['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(snk1);
-  const isDairySleep=['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(slp);
+  const snk1Built = buildSnackFromBlocks(S.mealSel.snack1blocks||[], dist.snk1, dairyDist.snk1);
+  const snk2Built = buildSnackFromBlocks(S.mealSel.snack2blocks||[], dist.snk2, 0);
+  const slpBuilt  = buildSnackFromBlocks(S.mealSel.sleepblocks||[],  0,        dairyDist.sleep);
 
   const brkKcal  = exchangesToKcal({...brkComp, fruit: dist.brk}, null);
   const lunKcal  = exchangesToKcal(lunComp, portions.lunch);
   const dinKcal  = exchangesToKcal(dinComp, portions.dinner);
-  const snk1Kcal = isFruitSnk1 ? exchangesToKcal(snk1Comp, null, dist.snk1)
-                  : isDairySnk1 ? exchangesToKcal(snk1Comp, null, undefined, dairyDist.snk1)
-                  : exchangesToKcal(snk1Comp, null);
-  const snk2Kcal = isFruitSnk2 ? exchangesToKcal(snk2Comp, null, dist.snk2) : exchangesToKcal(snk2Comp, null);
-  const slpKcal  = isDairySleep ? exchangesToKcal(slpComp, null, undefined, dairyDist.sleep) : exchangesToKcal(slpComp, null);
+  const snk1Kcal = exchangesToKcal(snk1Built.exch, null);
+  const snk2Kcal = exchangesToKcal(snk2Built.exch, null);
+  const slpKcal  = exchangesToKcal(slpBuilt.exch, null);
   const totalKcal= brkKcal+lunKcal+dinKcal+snk1Kcal+snk2Kcal+slpKcal;
   const target   = Math.round(S.goalKcal||0);
   const gap      = totalKcal-target;
-  return {brkKcal,lunKcal,dinKcal,snk1Kcal,snk2Kcal,slpKcal,totalKcal,target,gap};
+  return {brkKcal,lunKcal,dinKcal,snk1Kcal,snk2Kcal,slpKcal,totalKcal,target,gap,
+          snk1Text:snk1Built.text, snk2Text:snk2Built.text, slpText:slpBuilt.text};
 }
 
 function buildSevenDay(){
   if(!S.weekPlans) S.weekPlans = WEEK_PLANS.map(p=>({...p}));
-  // Inherit snack selections from 1-Day plan for any day that hasn't set its own
-  S.weekPlans.forEach(p=>{
-    if(!p.snk1) p.snk1=S.mealSel.snack1||'SNK_FRUIT';
-    if(!p.snk2) p.snk2=S.mealSel.snack2||'SNK_SMALLFRUIT';
-    if(!p.sleep) p.sleep=S.mealSel.sleep||'SNK_MILK';
-  });
   const diet = v('p-diet')||'Omnivore';
   const filteredBrk = filteredMealOptions(BREAKFAST_OPTIONS,diet);
   const filteredLun = filteredMealOptions(LUNCH_OPTIONS,diet);
@@ -2254,10 +2457,13 @@ function buildSevenDay(){
   // diet (e.g. chicken while Vegetarian is selected), swap it to the first
   // available diet-appropriate option — never silently leave an
   // incompatible meal showing.
-  S.weekPlans.forEach(p=>{
-    if(!filteredBrk.find(o=>o.v===p.brk) && filteredBrk.length) p.brk=filteredBrk[0].v;
-    if(!filteredLun.find(o=>o.v===p.lun) && filteredLun.length) p.lun=filteredLun[0].v;
-    if(!filteredDin.find(o=>o.v===p.din) && filteredDin.length) p.din=filteredDin[0].v;
+  S.weekPlans.forEach((p,di)=>{
+    // Cycle through available diet-appropriate options by day index, so
+    // each day gets variety instead of every incompatible day collapsing
+    // onto the same single replacement meal.
+    if(!filteredBrk.find(o=>o.v===p.brk) && filteredBrk.length) p.brk=filteredBrk[di % filteredBrk.length].v;
+    if(!filteredLun.find(o=>o.v===p.lun) && filteredLun.length) p.lun=filteredLun[di % filteredLun.length].v;
+    if(!filteredDin.find(o=>o.v===p.din) && filteredDin.length) p.din=filteredDin[di % filteredDin.length].v;
   });
   const ex=S.ex;
   const portions=getMealPortions();
@@ -2276,11 +2482,11 @@ function buildSevenDay(){
 
   const rows=[
     {key:'brk',  label:'🌅 Πρωινό'},
-    {key:'snk1', label:'🍎 Σνακ 1'},
+    {key:'snk1', label:'🍎 Σνακ 1 ↳¹'},
     {key:'lun',  label:'🍽️ Μεσημεριανό'},
-    {key:'snk2', label:'🍊 Σνακ 2'},
+    {key:'snk2', label:'🍊 Σνακ 2 ↳¹'},
     {key:'din',  label:'🌙 Βραδινό'},
-    {key:'sleep',label:'😴 Πριν ύπνο'},
+    {key:'sleep',label:'😴 Πριν ύπνο ↳¹'},
     {key:'kcal', label:'📊 Σύνολο kcal'},
   ];
 
@@ -2294,18 +2500,15 @@ function buildSevenDay(){
       if(row.key==='brk'){
         cell=sel('brk',di,filteredBrk,p.brk)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.brk]?MEALS[p.brk](ex,null):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.brkKcal} kcal</div>`;
       } else if(row.key==='snk1'){
-        const snk1Code=p.snk1||S.mealSel.snack1||'SNK_FRUIT';
-        cell=sel('snk1',di,SNACK_OPTIONS,snk1Code)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${snackText(snk1Code,'snk1')}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk1Kcal} kcal</div>`;
+        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk1Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk1Kcal} kcal</div>`;
       } else if(row.key==='lun'){
         cell=sel('lun',di,filteredLun,p.lun)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.lunKcal} kcal</div>`;
       } else if(row.key==='snk2'){
-        const snk2Code=p.snk2||S.mealSel.snack2||'SNK_SMALLFRUIT';
-        cell=sel('snk2',di,SNACK_OPTIONS,snk2Code)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${snackText(snk2Code,'snk2')}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk2Kcal} kcal</div>`;
+        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk2Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk2Kcal} kcal</div>`;
       } else if(row.key==='din'){
         cell=sel('din',di,filteredDin,p.din)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.dinKcal} kcal</div>`;
       } else if(row.key==='sleep'){
-        const slpCode=p.sleep||S.mealSel.sleep||'SNK_MILK';
-        cell=sel('sleep',di,SNACK_OPTIONS,slpCode)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${snackText(slpCode,'sleep')}</div><div style="font-size:10px;color:var(--teal-600)">${dt.slpKcal} kcal</div>`;
+        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.slpText}</div><div style="font-size:10px;color:var(--teal-600)">${dt.slpKcal} kcal</div>`;
       } else if(row.key==='kcal'){
         cell=`<div style="font-weight:700;font-size:12px">${dt.totalKcal} kcal</div>
           <div style="font-size:10px;color:var(--text-muted)">Target: ${dt.target}</div>
@@ -2317,7 +2520,7 @@ function buildSevenDay(){
   });
 
   html+='</tbody></table></div>';
-  html+=`<div class="field-note" style="margin-top:8px">Each day shows kcal per meal and daily total vs target. ✅ = within ±100 kcal. Change meals or snacks using the dropdowns — kcal updates live.</div>`;
+  html+=`<div class="field-note" style="margin-top:8px">Each day shows kcal per meal and daily total vs target. ✅ = within ±100 kcal. Change breakfast/lunch/dinner using the dropdowns — kcal updates live. <strong>↳¹ Snacks are the same every day</strong>, built from the multi-component selections in <em>1-Day Plan</em> — edit them there to update all 7 days at once.</div>`;
   setEl('sevenday-body',html);
 }
 
@@ -2346,9 +2549,19 @@ function buildReport(){
   const brkText=MEALS[S.mealSel.breakfast]?MEALS[S.mealSel.breakfast](ex,null):'—';
   const lunText=MEALS[S.mealSel.lunch]?MEALS[S.mealSel.lunch](ex,portions.lunch):'—';
   const dinText=MEALS[S.mealSel.dinner]?MEALS[S.mealSel.dinner](ex,portions.dinner):'—';
-  const snk1Text=snackText(S.mealSel.snack1||'SNK_FRUIT','snk1');
-  const snk2Text=snackText(S.mealSel.snack2||'SNK_SMALLFRUIT','snk2');
-  const sleepText=snackText(S.mealSel.sleep||'SNK_MILK','sleep');
+  // FIX (2026-06): build snack text from the actual multi-component blocks
+  // (S.mealSel.snack1blocks/snack2blocks/sleepblocks) — previously this used
+  // snackText(S.mealSel.snack1...) which read fields that are never set by
+  // the multi-component snack builder, so the report always showed the
+  // hardcoded default (plain fruit / small fruit / milk) regardless of what
+  // was actually configured in 1-Day Plan.
+  const dist=getFruitDistribution(), dairyDist=getDairyDistribution();
+  const snk1Built=buildSnackFromBlocks(S.mealSel.snack1blocks||[], dist.snk1, dairyDist.snk1);
+  const snk2Built=buildSnackFromBlocks(S.mealSel.snack2blocks||[], dist.snk2, 0);
+  const slpBuilt=buildSnackFromBlocks(S.mealSel.sleepblocks||[], 0, dairyDist.sleep);
+  const snk1Text=snk1Built.text;
+  const snk2Text=snk2Built.text;
+  const sleepText=slpBuilt.text;
   const day=calcDayTotals();
   const gapOk=Math.abs(day.gap)<=100;
   setEl('report-body',`<div style="width:100%;font-family:Arial,sans-serif;font-size:13px">
@@ -2425,11 +2638,11 @@ function buildReport(){
         return `<tr style="background:${i%2===0?'#fff':'#f8fffe'};border-bottom:1px solid #e5e7eb">
           <td style="padding:5px;font-weight:700">${p.day}</td>
           <td style="padding:5px">${MEALS[p.brk]?MEALS[p.brk](ex,null).split('–')[0].trim():''}</td>
-          <td style="padding:5px">${snackText(p.snk1||S.mealSel.snack1||'SNK_FRUIT','snk1')}</td>
+          <td style="padding:5px">${snk1Text}</td>
           <td style="padding:5px">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch).split('(')[0].trim():''}</td>
-          <td style="padding:5px">${snackText(p.snk2||S.mealSel.snack2||'SNK_SMALLFRUIT','snk2')}</td>
+          <td style="padding:5px">${snk2Text}</td>
           <td style="padding:5px">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner).split('(')[0].trim():''}</td>
-          <td style="padding:5px">${snackText(p.sleep||S.mealSel.sleep||'SNK_MILK','sleep')}</td>
+          <td style="padding:5px">${sleepText}</td>
           <td style="padding:5px;text-align:right;font-weight:700;color:${ok?'#0f6e56':'#b45309'}">${dt.totalKcal}</td>
         </tr>`;
       }).join('')}
@@ -2463,6 +2676,7 @@ function renderEngine(){
   const caps=S.effCaps||getEffectiveCaps(S.conditions);
   const gramsPerEx = Math.round(30 * ((S.exMeta.protein.pro||7)/7));
   const conditions=(S.conditions&&S.conditions.length)?S.conditions:['General'];
+  const capConflicts = getCapConflicts(S.conditions);
   const gapData=S.exGap||{choGap:0,proGap:0,fatGap:0,kcalGap:0,starchCapped:false,proteinCapped:false,fatCapped:false};
   const m=S.exMeta;
   const planKcal=ex.fruit*m.fruit.kcal + ex.veg*m.veg.kcal + ex.dairy*m.dairy.kcal + ex.starch*m.starch.kcal + ex.protein*m.protein.kcal + ex.fat*m.fat.kcal;
@@ -2487,6 +2701,30 @@ function renderEngine(){
     {label:'Meal realism — oil cap', val:`≤${caps.fatPerMealMax} tsp per main meal`, st:'ok', why:`Clinical cap for this client: ≤${caps.fatPerMealMax} tsp olive oil per main meal.`},
     {label:'Exchange kcal gap vs target', val:gap+' kcal (plan vs target)', st:Math.abs(gap)<=100?'ok':'warn', why:'Do not fill this gap automatically with protein/fat — review target instead.'},
   ];
+  if(S.isPregnant){
+    checks.push({
+      label:'Pregnancy — caloric restriction check',
+      val: S.pregnancyManualDeficit ? `Manual deficit: ${Math.round(S.calAdj)} kcal` : 'No deficit applied',
+      st: S.pregnancyManualDeficit ? 'err' : 'ok',
+      why: S.pregnancyManualDeficit
+        ? 'ACOG/DGA guidance recommends against caloric restriction during pregnancy regardless of starting BMI, unless specifically medically indicated — confirm this manual deficit is intentional and physician-supervised.'
+        : 'Goal-driven auto deficit/surplus is suppressed during pregnancy per ACOG/DGA — only the trimester-based energy addition is applied.'
+    });
+  }
+  const conflictBanner=document.getElementById('cap-conflict-banner');
+  if(conflictBanner){
+    if(capConflicts.length){
+      const labelMap={starchDailyMax:'Starch (daily)',starchPerMealMax:'Starch (per meal)',proteinDailyMax:'Protein (daily)',proteinPerMealMax:'Protein (per meal)',fatDailyMax:'Fat (daily)',fatPerMealMax:'Fat (per meal)'};
+      conflictBanner.innerHTML = `<div class="alert err" style="margin-bottom:10px">
+        <strong>⚠ Clinical conflict — review required:</strong> the selected conditions specify different limits for the same category. The app is NOT auto-resolving this — please decide which limit applies for this client.
+        <ul style="margin:6px 0 0 18px">
+          ${capConflicts.map(c=>`<li><strong>${labelMap[c.metric]||c.metric}:</strong> ${c.entries.map(e=>e.cond+' → '+e.value).join(' vs. ')}. Currently using the most conservative value (${c.suggestedMin}) in Exchange System — override manually in Exchange System if a different value is more appropriate for this client.</li>`).join('')}
+        </ul>
+      </div>`;
+    } else {
+      conflictBanner.innerHTML='';
+    }
+  }
   const tbody=document.getElementById('engine-table');
   if(!tbody) return;
   tbody.innerHTML=checks.map(c=>`<tr><td>${c.label}</td><td>${c.val}</td><td><span class="badge ${c.st}">${c.st==='ok'?'OK':c.st==='err'?'Review':c.st==='neutral'?'Info':'Check'}</span></td><td style="font-size:12px;color:var(--gray-500)">${c.why}</td></tr>`).join('');
@@ -2717,10 +2955,10 @@ const CONDITION_VITAMINS = {
   IBS:         [{n:'Προβιοτικά', why:'Επιλογή στελέχους εξατομικευμένα — μπορεί να βοηθήσουν στα συμπτώματα'},{n:'Βιταμίνη D', why:'Έλεγχος επιπέδων αν περιορίζονται γαλακτοκομικά'}],
   Obesity:     [{n:'Βιταμίνη D', why:'Συχνή ανεπάρκεια'},{n:'Βιταμίνη Β12, Σίδηρος', why:'Ειδικός έλεγχος μετά από βαριατρική επέμβαση'}],
   Thyroid:     [{n:'Σελήνιο', why:'Υποστηρίζει τη μετατροπή Τ4→Τ3, ιδίως στη Hashimoto'},{n:'Ψευδάργυρος, Σίδηρος, Βιταμίνη D', why:'Συχνές ελλείψεις σε αυτοάνοση θυρεοειδίτιδα'},{n:'⚠ Ιώδιο μόνο υπό καθοδήγηση', why:'Υπερβολικό ιώδιο μπορεί να επιδεινώσει την αυτοανοσία'}],
-  Celiac:      [{n:'Σίδηρος, Φολικό, Β12', why:'Συχνές ελλείψεις λόγω δυσαπορρόφησης πριν τη διάγνωση/σε ενεργή νόσο'},{n:'Βιταμίνη D, Ασβέστιο', why:'Υποστήριξη οστικής υγείας'}],
+  Celiac:      [{n:'Σίδηρος, Φολικό οξύ, Βιταμίνη Β12', why:'Συχνές ελλείψεις λόγω δυσαπορρόφησης πριν τη διάγνωση/σε ενεργή νόσο'},{n:'Βιταμίνη D, Ασβέστιο', why:'Υποστήριξη οστικής υγείας'}],
   Thalassemia: [{n:'Φολικό οξύ', why:'Συχνά απαραίτητο λόγω αυξημένης ερυθροποίησης — υπό καθοδήγηση αιματολόγου'},{n:'⚠ Αποφυγή σιδήρου & υψηλής δόσης βιτ. C', why:'Κίνδυνος επιβάρυνσης σιδήρου σε ασθενείς με τακτικές μεταγγίσεις'}],
 };
-const VITAMIN_DISCLAIMER = '⚠ Οι παραπάνω είναι γενικές, μη συνταγογραφικές ενδείξεις — κάθε συμπλήρωμα πρέπει να συζητηθεί και να εγκριθεί από τον θεράποντα ιατρό, ιδιαίτερα σε ΧΝΝ, Αιμοκάθαρση και Μεσογειακή Αναιμία όπου ορισμένα συμπληρώματα (σίδηρος, κάλιο, βιταμίνες A/E/K) μπορεί να είναι επιβλαβή.';
+const VITAMIN_DISCLAIMER = 'ℹ️ Αυτά είναι κλινικές παρατηρήσεις προς εξέταση από τον διαιτολόγο — ΟΧΙ αυτόματες συστάσεις συμπληρωμάτων. Οποιαδήποτε απόφαση για συμπλήρωμα παραμένει αποκλειστικά κλινική κρίση, ιδιαίτερα σε ΧΝΝ, Αιμοκάθαρση και Μεσογειακή Αναιμία όπου ορισμένα συμπληρώματα (σίδηρος, κάλιο, βιταμίνες A/E/K) μπορεί να είναι επιβλαβή.';
 
 // ── FOOD SOURCES PER NUTRIENT ──
 // Used to turn "low Vitamin D" / "needs more magnesium" type suggestions
@@ -2804,12 +3042,58 @@ function onLabInput(key){
   scheduleAutosave();
 }
 
+// Splits a suggestion's nutrient-name field into individual tokens on
+// commas, e.g. "Ψευδάργυρος, Σίδηρος, Βιταμίνη D" → 3 tokens. Used to
+// detect when two suggestions (from different conditions/labs) are really
+// about the same nutrient(s), even if one is phrased as a combined entry.
+function nutrientTokens(n){
+  return n.split(',').map(s=>s.trim()).filter(Boolean);
+}
+
+// Adds a vitamin/mineral suggestion to the list, merging it with an existing
+// entry instead of creating a duplicate row whenever the two share the exact
+// same nutrient(s) — e.g. PCOS's standalone "Βιταμίνη D" and Thyroid's
+// combined "Ψευδάργυρος, Σίδηρος, Βιταμίνη D" both get folded into ONE row
+// (the more complete one), with both conditions' rationale/source kept and
+// concatenated — nothing is silently dropped, just consolidated.
+// Warning entries (prefixed "⚠") are NEVER merged with anything, in either
+// direction — cautions always stay fully standalone so they're never
+// diluted or mixed in with a positive food-source recommendation.
+function addVitaminItem(items, item){
+  const isWarning = item.n.trim().startsWith('⚠');
+  if(!isWarning){
+    const newTokens = nutrientTokens(item.n);
+    for(const existing of items){
+      if(existing.n.trim().startsWith('⚠')) continue;
+      const exTokens = nutrientTokens(existing.n);
+      const newCoveredByExisting = newTokens.every(t=>exTokens.includes(t));
+      const existingCoveredByNew = exTokens.every(t=>newTokens.includes(t));
+      if(newCoveredByExisting){
+        // Existing entry already mentions every nutrient this one does —
+        // fold this item's reasoning/source into the existing row.
+        existing.why += ' · ' + item.why;
+        existing.source += ' + ' + item.source;
+        return;
+      }
+      if(existingCoveredByNew){
+        // This new entry is the more complete one — absorb the existing
+        // row's reasoning/source into it and replace the existing row.
+        item.why = existing.why + ' · ' + item.why;
+        item.source = existing.source + ' + ' + item.source;
+        items.splice(items.indexOf(existing), 1, item);
+        return;
+      }
+    }
+  }
+  items.push(item);
+}
+
 // Combines condition-based and lab-deficiency-based vitamin/mineral suggestions
 function renderVitaminSuggestions(){
   const conditions=(S.conditions&&S.conditions.length)?S.conditions:[];
   let items=[];
   conditions.forEach(c=>{
-    (CONDITION_VITAMINS[c]||[]).forEach(item=>items.push({...item, source:'Πάθηση: '+( (COND_GUIDANCE[c]||{}).gr || c)}));
+    (CONDITION_VITAMINS[c]||[]).forEach(item=>addVitaminItem(items, {...item, source:'Πάθηση: '+( (COND_GUIDANCE[c]||{}).gr || c)}));
   });
   // Lab-based flags
   LAB_TESTS.forEach(t=>{
@@ -2817,22 +3101,22 @@ function renderVitaminSuggestions(){
     const status=labStatus(t,val);
     if(status==='low' && t.lowMsg && ['b12','folate','vitd','ferritin','iron','magnesium','hgb'].includes(t.key)){
       const map={b12:'Βιταμίνη Β12',folate:'Φολικό οξύ',vitd:'Βιταμίνη D',ferritin:'Σίδηρος',iron:'Σίδηρος',magnesium:'Μαγνήσιο',hgb:'Σίδηρος/Β12/Φολικό (αναιμία)'};
-      items.push({n:map[t.key], why:`Εργαστηριακά: ${t.gr} = ${val} ${t.unit} (κάτω του φυσιολογικού ${t.low}–${t.high})`, source:'Από αιματολογικό έλεγχο'});
+      addVitaminItem(items, {n:map[t.key], why:`Εργαστηριακά: ${t.gr} = ${val} ${t.unit} (κάτω του φυσιολογικού ${t.low}–${t.high})`, source:'Από αιματολογικό έλεγχο'});
     }
   });
   const el=document.getElementById('vitamin-suggestions');
   if(!el) return;
   if(!items.length){
-    el.innerHTML='<div style="color:var(--text-muted);font-size:13px">No specific suggestions yet — select condition(s) in Client Profile and/or enter lab values above.</div>';
+    el.innerHTML='<div style="color:var(--text-muted);font-size:13px">No notable findings yet — select condition(s) in Client Profile and/or enter lab values above.</div>';
     return;
   }
-  let html='<table><thead><tr><th>Nutrient</th><th>Why</th><th>Food sources (Πηγές τροφής)</th><th>Trigger</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>Nutrient</th><th>Clinical note</th><th>Dietary food sources</th><th>Basis</th></tr></thead><tbody>';
   items.forEach(it=>{
     const foods=getFoodSources(it.n);
     html+=`<tr><td><strong>${it.n}</strong></td><td style="font-size:12px">${it.why}</td><td style="font-size:12px">${foods||'—'}</td><td style="font-size:11px;color:var(--text-muted)">${it.source}</td></tr>`;
   });
   html+='</tbody></table>';
-  html+=`<div class="alert warn" style="margin-top:10px;font-size:12px">${VITAMIN_DISCLAIMER}</div>`;
+  html+=`<div class="alert info" style="margin-top:10px;font-size:12px">${VITAMIN_DISCLAIMER}</div>`;
   el.innerHTML=html;
 }
 
@@ -2843,7 +3127,7 @@ const SAVE_FIELD_IDS = [
   'p-id','p-name','p-date','p-age','p-sex','p-activity','p-height','p-weight','p-cal-adj','p-goal','p-meat','p-dairy','p-diet','p-trimester',
   'bc-bf','bc-water','bc-fatmass','bc-muscle','bc-metage','bc-visceral','bc-physique','bc-bone',
   'm-carb','m-protein',
-  's-breakfast','s-lunch','s-dinner','s-snack1','s-snack2','s-sleep',
+  's-breakfast','s-lunch','s-dinner',
   'i-goal','i-goal-why','i-goal-tried','i-lifestyle','i-exercise','i-steps','i-sleep','i-stress','i-typical-diet','i-skip-meals','i-cravings','i-intolerances','i-digestion','i-coach-notes',
   'n-diagnoses','n-medication','n-allergies','n-dislikes','n-adherence','n-clinician-notes',
   ...LAB_TESTS.map(t=>'lab-'+t.key)
@@ -2883,6 +3167,17 @@ function applyState(state){
   if(state.exMeta) S.exMeta=state.exMeta;
   if(state.tracking) S.tracking=state.tracking;
   if(state.mealSel) S.mealSel={...S.mealSel,...state.mealSel};
+  // Restore snack checkbox UI to match the saved selection
+  ['snack1','snack2','sleep'].forEach(slot=>{
+    const elId = slot==='snack1'?'s-snack1':slot==='snack2'?'s-snack2':'s-sleep';
+    const blocksKey = slot+'blocks';
+    const el=document.getElementById(elId);
+    if(el && S.mealSel[blocksKey]){
+      el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+        cb.checked = S.mealSel[blocksKey].includes(cb.value);
+      });
+    }
+  });
   if(state.weekPlans) S.weekPlans=state.weekPlans;
   if(state.reportOptions){
     S.reportOptions=state.reportOptions;
@@ -2914,9 +3209,11 @@ function resetForm(){
   document.getElementById('s-breakfast').value='BRK_TOAST';
   document.getElementById('s-lunch').value='LUN_CHICKEN_RICE';
   document.getElementById('s-dinner').value='DIN_FISH_POTATO';
-  document.getElementById('s-snack1').value='SNK_FRUIT';
-  document.getElementById('s-snack2').value='SNK_SMALLFRUIT';
-  document.getElementById('s-sleep').value='SNK_MILK';
+  ['s-snack1','s-snack2','s-sleep'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+  });
+  applySmartSnackDefaults();
   S.ex={fruit:2,veg:5,dairy:2,starch:0,protein:0,fat:0};
   S.exAuto={starch:true,protein:true,fat:true};
   S.exMeta=makeExMeta();
@@ -2954,6 +3251,7 @@ async function saveCurrentClient(){
   if(error){
     alert('⚠️ Could not save: '+error.message);
   } else {
+    S_isDirty=false; // changes are now safely in the cloud
     alert('✅ Client saved: '+name+'\n\nFind it anytime under "My Clients" in the sidebar.');
   }
   renderClientList();
@@ -2969,6 +3267,7 @@ async function loadClientById(rowId){
   const {data, error} = await sb.from('clients').select('*').eq('id',rowId).single();
   if(error || !data) return;
   applyState(data.data);
+  S_isDirty=false; // freshly loaded from cloud, nothing unsaved yet
   nav('dashboard');
 }
 
@@ -3064,13 +3363,27 @@ function autosaveSession(){
   try{ localStorage.setItem('nutriengine_autosave', JSON.stringify(captureState())); }catch(e){}
 }
 let autosaveTimer=null;
+let S_isDirty=false; // tracks whether changes exist that haven't been pushed via "Save Client" to the cloud
 function scheduleAutosave(){
+  S_isDirty=true;
   clearTimeout(autosaveTimer);
   autosaveTimer=setTimeout(autosaveSession, 1000);
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') autosaveSession(); });
 window.addEventListener('pagehide', autosaveSession);
 setInterval(autosaveSession, 20000);
+
+// Warn before closing the tab/app if there's an active client with changes
+// not yet pushed to the cloud via "Save Client" — local autosave still
+// protects against data loss, but the clinician should know to sync.
+window.addEventListener('beforeunload', (e)=>{
+  const hasClient = v('p-name') && v('p-name').trim()!=='';
+  if(hasClient && S_isDirty){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
 
 // ── RESTORE LAST SESSION ON LOAD ──
 function tryRestoreAutosave(){
@@ -3096,9 +3409,10 @@ window.onload=function(){
   document.getElementById('s-breakfast').innerHTML=mealOptionsHtml(filteredMealOptions(BREAKFAST_OPTIONS,v('p-diet')||'Omnivore'),'BRK_TOAST');
   document.getElementById('s-lunch').innerHTML=mealOptionsHtml(filteredMealOptions(LUNCH_OPTIONS,v('p-diet')||'Omnivore'),'LUN_CHICKEN_RICE');
   document.getElementById('s-dinner').innerHTML=mealOptionsHtml(filteredMealOptions(DINNER_OPTIONS,v('p-diet')||'Omnivore'),'DIN_FISH_POTATO');
-  document.getElementById('s-snack1').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_FRUIT');
-  document.getElementById('s-snack2').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_SMALLFRUIT');
-  document.getElementById('s-sleep').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_MILK');
+  document.getElementById('s-snack1').innerHTML=snackBlockOptionsHtml();
+  document.getElementById('s-snack2').innerHTML=snackBlockOptionsHtml();
+  document.getElementById('s-sleep').innerHTML=snackBlockOptionsHtml();
+  applySmartSnackDefaults();
   calcAll(); calcMacros(); renderDashboard();
   tryRestoreAutosave();
   // Auto-save on any input/change anywhere in the form
