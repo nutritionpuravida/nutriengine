@@ -761,16 +761,15 @@ tr:hover td { background: var(--bg-hover); }
         </div>
         <div class="form-grid three" style="margin-bottom:16px">
           <div class="form-field"><label>🍎 Σνακ 1 / Snack 1</label>
-            <div id="s-snack1" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
+            <select id="s-snack1" onchange="buildOneDayPlan()"></select>
           </div>
           <div class="form-field"><label>🍊 Σνακ 2 / Snack 2</label>
-            <div id="s-snack2" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
+            <select id="s-snack2" onchange="buildOneDayPlan()"></select>
           </div>
           <div class="form-field"><label>😴 Πριν τον ύπνο / Before sleep</label>
-            <div id="s-sleep" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input)" onchange="buildOneDayPlan()"></div>
+            <select id="s-sleep" onchange="buildOneDayPlan()"></select>
           </div>
         </div>
-        <div class="field-note" style="margin-bottom:12px">Tick any combination of items for each snack (e.g. fruit + yogurt + nuts together) — totals update automatically to match Exchange System servings.</div>
         <div id="oneday-plan"></div>
         <div class="section-label">EXCHANGE COVERAGE CHECK</div>
         <div id="oneday-check"></div>
@@ -1046,7 +1045,7 @@ const S = {
   exMeta:null, lastDairyType:'Moderate-fat', lastMeatType:'Lean',
   bc:{bf:null,water:null,fatmass:null,muscle:null,metage:null,visceral:null},
   tracking:[],intake:{},notes:{},labValues:{},reportOptions:{oneDay:true,sevenDay:true},
-  mealSel:{breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO'}
+  mealSel:{breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO',snack1:'SNK_FRUIT',snack2:'SNK_FRUIT',sleep:'SNK_MILK'}
 };
 
 // ═══════════════════════════════════════════
@@ -1134,111 +1133,53 @@ sb.auth.onAuthStateChange((event, session)=>{
   }
 });
 
-// Distributes total fruit servings across breakfast + snack1 + snack2
-// so they add up to EXACTLY S.ex.fruit. Called by MEALS, snackText, calcDayTotals.
+// FIX (2026-06, dietitian feedback after real client testing): fruit no
+// longer goes to breakfast at all — it is distributed ONLY across the three
+// snack slots (Snack 1, Snack 2, Before Sleep), split as evenly as possible
+// so the totals ALWAYS sum to exactly S.ex.fruit for any value (1, 2, 3, 4,
+// 5...). The previous version gave breakfast a fixed 1 serving and only
+// worked correctly for small totals because of an unrelated checkbox-based
+// snack system that has been removed (see note below) — this version has
+// no such dependency and is purely arithmetic, so it can never silently
+// break for any serving count.
 function getFruitDistribution(){
-  const total = S.ex ? (S.ex.fruit||2) : 2;
-  const brk = Math.min(1, total);
-  const remaining = Math.max(0, total - brk);
-  const snk1 = Math.ceil(remaining/2);
-  const snk2 = Math.floor(remaining/2);
-  return {brk, snk1, snk2};
+  const total = S.ex ? (S.ex.fruit||0) : 0;
+  const base = Math.floor(total/3);
+  let rem = total - base*3;
+  let snk1=base, snk2=base, sleep=base;
+  if(rem>0){ snk1++; rem--; }
+  if(rem>0){ snk2++; rem--; }
+  if(rem>0){ sleep++; rem--; }
+  return {brk:0, snk1, snk2, sleep};
 }
 
-// Distributes total dairy servings across breakfast (only if BRK_CEREAL is
-// selected, which already includes 1 dairy), snack1, and before-sleep.
-// "Before sleep" gets priority (clinically common — calcium/protein before
-// bed); any servings beyond what fits there spill into snack1.
-// This guarantees the FULL S.ex.dairy amount is always reflected somewhere
-// in the meal plan, never silently fixed at 1 regardless of input.
-// ── SNACK BUILDING BLOCKS ──
-// Each snack slot (Snack 1, Snack 2, Before Sleep) can now combine MULTIPLE
-// components — e.g. fruit + yogurt + nuts in the same snack — instead of
-// being limited to one single option. This matches how dietitians actually
-// build snacks to meet remaining daily calorie/exchange needs.
-const SNACK_BLOCKS = [
-  {v:'fruit',      l:'🍎 Φρούτο',           exch:{fruit:1}, dynamic:'fruit'},
-  {v:'driedfruit', l:'🍇 Αποξηραμένα φρούτα', exch:{fruit:1}, text:'2 κ.σ. αποξηραμένα φρούτα'},
-  {v:'crackers',   l:'🍘 Κράκερ ολικής',     exch:{starch:1}, text:'3 κράκερ ολικής άλεσης'},
-  {v:'oatbar',     l:'🥣 Μπάρα βρώμης',      exch:{starch:1,fat:0.5}, text:'1 μπάρα βρώμης/δημητριακών'},
-  {v:'nuts',       l:'🥜 Ξηροί καρποί',      exch:{fat:1}, text:'6 αμύγδαλα ή 4 καρύδια'},
-  {v:'milk',       l:'🥛 Γάλα',             exch:{dairy:1}, dynamic:'dairy'},
-  {v:'yogurt',     l:'🍦 Γιαούρτι 2%',       exch:{dairy:1}, text:'1 γιαούρτι 2% (170g)'},
-  {v:'coffee',     l:'☕ Καφές (σκέτος)',     exch:{}, text:'Καφές χωρίς ζάχαρη'},
-];
-function snackBlockOptionsHtml(){
-  return SNACK_BLOCKS.map(b=>`<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap"><input type="checkbox" value="${b.v}" style="width:auto"> ${b.l}</label>`).join('');
-}
-
-// Applies sensible default snack selections based on what's actually in the
-// Exchange System — e.g. if dairy servings exist, automatically tick "milk"
-// or "yogurt" on a snack slot so the full amount is used without the
-// clinician needing to manually configure every checkbox from scratch.
-function applySmartSnackDefaults(){
-  const fruitTotal = S.ex ? (S.ex.fruit||2) : 2;
-  const dairyTotal = S.ex ? (S.ex.dairy||0) : 0;
-  const snk1Fruit = document.querySelector('#s-snack1 input[value="fruit"]');
-  if(snk1Fruit && fruitTotal>1) snk1Fruit.checked=true;
-  const sleepMilk = document.querySelector('#s-sleep input[value="milk"]');
-  if(sleepMilk && dairyTotal>0) sleepMilk.checked=true;
-  const snk2Fruit = document.querySelector('#s-snack2 input[value="fruit"]');
-  if(snk2Fruit && fruitTotal>2) snk2Fruit.checked=true;
-}
-
-// Reads which checkboxes are ticked in a snack slot's checkbox group
-function getSnackSelection(elId){
-  const el=document.getElementById(elId);
-  if(!el) return [];
-  return Array.from(el.querySelectorAll('input[type=checkbox]:checked')).map(cb=>cb.value);
-}
-
-// Distributes total dairy servings across breakfast (only if BRK_CEREAL is
-// selected, which already includes 1 dairy), snack1, and before-sleep.
-// "Before sleep" gets priority (clinically common — calcium/protein before
-// bed); any servings beyond what fits there spill into snack1.
-// This guarantees the FULL S.ex.dairy amount is always reflected somewhere
-// in the meal plan, never silently fixed at 1 regardless of input.
+// FIX (2026-06): dairy is now distributed across ALL THREE snack slots
+// (previously Snack 2 was hardcoded to always receive 0 dairy, a bug).
+// Breakfast still absorbs 1 serving automatically when BRK_CEREAL is
+// selected (that meal's milk is intrinsic to the choice, not a "snack"),
+// then the remainder is split evenly across snack1/snack2/sleep, with
+// "before sleep" given the first priority serving (clinically common to
+// place dairy before bed) when the total doesn't divide evenly.
 function getDairyDistribution(){
   const total = S.ex ? (S.ex.dairy||0) : 0;
   const brkUsesDairy = (S.mealSel && S.mealSel.breakfast==='BRK_CEREAL') ? 1 : 0;
-  let remaining = Math.max(0, total - brkUsesDairy);
-  const sleep = Math.min(2, remaining); // before-sleep takes up to 2 servings
-  remaining = Math.max(0, remaining - sleep);
-  const snk1 = remaining; // any further dairy servings go to snack1
-  return {brk: brkUsesDairy, sleep, snk1};
-}
-
-// Calculates the combined exchange composition + display text for a snack
-// slot given its selected building-block components (array of block keys)
-function buildSnackFromBlocks(blockKeys, fruitCount, dairyCount){
-  if(!blockKeys || !blockKeys.length) return {exch:{fruit:0,starch:0,fat:0,dairy:0}, text:'—', hasFruit:false, hasDairy:false};
-  const exch = {fruit:0, starch:0, fat:0, dairy:0};
-  const parts = [];
-  let hasFruit=false, hasDairy=false;
-  blockKeys.forEach(key=>{
-    const b = SNACK_BLOCKS.find(x=>x.v===key);
-    if(!b) return;
-    if(b.dynamic==='fruit'){ hasFruit=true; return; } // handled separately via fruitCount
-    if(b.dynamic==='dairy'){ hasDairy=true; return; } // handled separately via dairyCount
-    Object.keys(b.exch).forEach(k=>exch[k]=(exch[k]||0)+b.exch[k]);
-    parts.push(b.text);
-  });
-  if(hasFruit && fruitCount>0){ exch.fruit+=fruitCount; parts.unshift(`${fruitCount} φρούτ${fruitCount>1?'α':'ο'}`); }
-  if(hasDairy && dairyCount>0){
-    const cupTxt = dairyCount===0.5?'½ φλ.':dairyCount===1?'1 φλ.':dairyCount===1.5?'1½ φλ.':`${dairyCount} φλ.`;
-    exch.dairy+=dairyCount;
-    parts.unshift(`${cupTxt} γάλα 1,5%`);
-  }
-  return {exch, text: parts.length?parts.join(' + '):'—', hasFruit, hasDairy};
+  const remaining = Math.max(0, total - brkUsesDairy);
+  const base = Math.floor(remaining/3);
+  let rem = remaining - base*3;
+  let sleep=base, snk1=base, snk2=base;
+  if(rem>0){ sleep++; rem--; }
+  if(rem>0){ snk1++; rem--; }
+  if(rem>0){ snk2++; rem--; }
+  return {brk:brkUsesDairy, sleep, snk1, snk2};
 }
 
 const MEALS = {
-  BRK_TOAST:       (ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + αγγούρι / ντοματίνια + ${f} φρούτ${f>1?'α':'ο'}`; },
-  BRK_TOAST_TURKEY:(ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + 1 φέτα γαλοπούλα + αγγούρι + ${f} φρούτ${f>1?'α':'ο'}`; },
-  BRK_EGGS:        (ex,p) => { const f=getFruitDistribution().brk; return `2 αυγά βραστά/ποσέ + 1 φέτα ψωμί ολικής + αγγούρι / ντομάτα + ${f} φρούτ${f>1?'α':'ο'}`; },
-  BRK_EGGS_TOAST:  (ex,p) => { const f=getFruitDistribution().brk; return `Τοστ (2 φέτες ψωμί ολικής) – 1 αυγό + 1 φέτα τυρί light + ${f} φρούτ${f>1?'α':'ο'}`; },
-  BRK_CEREAL:      (ex,p) => { const f=getFruitDistribution().brk; return `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. γάλα 1,5% + ${f} φρούτ${f>1?'α':'ο'}`; },
-  BRK_OATS_VEGAN:  (ex,p) => { const f=getFruitDistribution().brk; return `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. εμπλουτισμένο φυτικό γάλα (αμύγδαλο/σόγια) + ${f} φρούτ${f>1?'α':'ο'}`; },
+  BRK_TOAST:       (ex,p) => `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + αγγούρι / ντοματίνια`,
+  BRK_TOAST_TURKEY:(ex,p) => `Τοστ (2 φέτες ψωμί ολικής) – 1 φέτα τυρί light + 1 φέτα γαλοπούλα + αγγούρι`,
+  BRK_EGGS:        (ex,p) => `2 αυγά βραστά/ποσέ + 1 φέτα ψωμί ολικής + αγγούρι / ντομάτα`,
+  BRK_EGGS_TOAST:  (ex,p) => `Τοστ (2 φέτες ψωμί ολικής) – 1 αυγό + 1 φέτα τυρί light`,
+  BRK_CEREAL:      (ex,p) => `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. γάλα 1,5%`,
+  BRK_OATS_VEGAN:  (ex,p) => `Βρώμη (5 κ.σ. / ~40g) – 1 φλ. εμπλουτισμένο φυτικό γάλα (αμύγδαλο/σόγια)`,
   LUN_CHICKEN_RICE:   (ex,p) => 'Κοτόπουλο + ρύζι' + mealSuffix(ex,p,'σαλάτα'),
   LUN_FISH_POTATO:    (ex,p) => 'Ψάρι + πατάτα' + mealSuffix(ex,p,'σαλάτα'),
   LUN_LOUVI_TUNA:     (ex,p) => 'Λουβί + τόνος' + mealSuffix(ex,p,'σαλάτα / χόρτα'),
@@ -1274,12 +1215,12 @@ const MEALS = {
 // Snacks are specified in SNACK_EXCHANGES below.
 const MEAL_EXCHANGES = {
   // Breakfasts: fixed composition
-  BRK_TOAST:       {protein:1, starch:2, fat:0, fruit:1, dairy:0, veg:0},
-  BRK_TOAST_TURKEY:{protein:2, starch:2, fat:0, fruit:1, dairy:0, veg:0}, // cheese+turkey = 2 protein
-  BRK_EGGS:        {protein:2, starch:1, fat:0, fruit:1, dairy:0, veg:0}, // 2 eggs = 2 protein, 1 bread
-  BRK_EGGS_TOAST:  {protein:2, starch:2, fat:0, fruit:1, dairy:0, veg:0}, // egg+cheese = 2 protein
-  BRK_CEREAL:      {protein:0, starch:2, fat:0, fruit:1, dairy:1, veg:0},
-  BRK_OATS_VEGAN:  {protein:0, starch:2, fat:0, fruit:1, dairy:1, veg:0}, // fortified plant milk counted as dairy exchange (see Equivalents Guide)
+  BRK_TOAST:       {protein:1, starch:2, fat:0, fruit:0, dairy:0, veg:0},
+  BRK_TOAST_TURKEY:{protein:2, starch:2, fat:0, fruit:0, dairy:0, veg:0}, // cheese+turkey = 2 protein
+  BRK_EGGS:        {protein:2, starch:1, fat:0, fruit:0, dairy:0, veg:0}, // 2 eggs = 2 protein, 1 bread
+  BRK_EGGS_TOAST:  {protein:2, starch:2, fat:0, fruit:0, dairy:0, veg:0}, // egg+cheese = 2 protein
+  BRK_CEREAL:      {protein:0, starch:2, fat:0, fruit:0, dairy:1, veg:0},
+  BRK_OATS_VEGAN:  {protein:0, starch:2, fat:0, fruit:0, dairy:1, veg:0}, // fortified plant milk counted as dairy exchange (see Equivalents Guide)
   // Main meals: base veg only — starch/protein/fat added dynamically from getMealPortions()
   LUN_CHICKEN_RICE:   {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
   LUN_FISH_POTATO:    {protein:0, starch:0, fat:0, fruit:0, dairy:0, veg:1},
@@ -1309,23 +1250,9 @@ const MEAL_EXCHANGES = {
   DIN_BEAN_PASTA:     {protein:2, starch:0, fat:1, fruit:0, dairy:0, veg:1},
 };
 
-// Exchange costs for each snack option (LEGACY — see SNACK_OPTIONS note above; superseded by buildSnackFromBlocks)
-const SNACK_EXCHANGES = {
-  SNK_FRUIT:       {fruit:1, starch:0, fat:0, dairy:0},
-  SNK_SMALLFRUIT:  {fruit:1, starch:0, fat:0, dairy:0},
-  SNK_DRIEDFRUIT:  {fruit:1, starch:0, fat:0, dairy:0},
-  SNK_CRACKERS:    {fruit:0, starch:1, fat:0, dairy:0},
-  SNK_OATBAR:      {fruit:0, starch:1, fat:1, dairy:0},
-  SNK_NUTS:        {fruit:0, starch:0, fat:1, dairy:0},
-  SNK_COFFEE_NUTS: {fruit:0, starch:0, fat:1, dairy:0},
-  SNK_MILK:        {fruit:0, starch:0, fat:0, dairy:1},
-  SNK_MILK_HALF:   {fruit:0, starch:0, fat:0, dairy:0.5},
-  SNK_MILK_DOUBLE: {fruit:0, starch:0, fat:0, dairy:2},
-  SNK_COFFEE_MILK: {fruit:0, starch:0, fat:0, dairy:0.25},
-  SNK_YOGURT:      {fruit:0, starch:0, fat:0, dairy:1},
-  SNK_YOGURT_FRUIT:{fruit:1, starch:0, fat:0, dairy:1},
-  SNK_NONE:        {fruit:0, starch:0, fat:0, dairy:0},
-};
+// Exchange costs for each snack option are now computed dynamically per
+// slot by snackExchangeCost() below, since fruit/dairy counts vary by slot
+// and by how many total servings are configured in the Exchange System.
 
 // Calculates the kcal for a given exchange composition using current exMeta values.
 // fruitOverride allows passing the actual fruit serving count for snack calculations.
@@ -1362,23 +1289,19 @@ function calcDayTotals(){
   const lunComp  = MEAL_EXCHANGES[ms.lunch]     || {};
   const dinComp  = MEAL_EXCHANGES[ms.dinner]    || {};
 
-  // Snack slots are now arrays of building-block keys (e.g. ['fruit','yogurt','nuts'])
-  // rather than a single option — buildSnackFromBlocks() sums their exchange cost.
-  const dist = getFruitDistribution();
-  const dairyDist = getDairyDistribution();
-  const snk1Blocks = ms.snack1blocks || [];
-  const snk2Blocks = ms.snack2blocks || [];
-  const slpBlocks  = ms.sleepblocks  || [];
-  const snk1Built = buildSnackFromBlocks(snk1Blocks, dist.snk1, dairyDist.snk1);
-  const snk2Built = buildSnackFromBlocks(snk2Blocks, dist.snk2, 0);
-  const slpBuilt  = buildSnackFromBlocks(slpBlocks, 0, dairyDist.sleep);
+  const snk1Code = ms.snack1 || 'SNK_FRUIT';
+  const snk2Code = ms.snack2 || 'SNK_FRUIT';
+  const sleepCode = ms.sleep || 'SNK_MILK';
+  const snk1Cost = snackExchangeCost(snk1Code, 'snk1');
+  const snk2Cost = snackExchangeCost(snk2Code, 'snk2');
+  const sleepCost = snackExchangeCost(sleepCode, 'sleep');
 
-  const brkKcal  = exchangesToKcal({...brkComp, fruit: dist.brk}, null);
+  const brkKcal  = exchangesToKcal(brkComp, null);
   const lunKcal  = exchangesToKcal(lunComp, portions.lunch);
   const dinKcal  = exchangesToKcal(dinComp, portions.dinner);
-  const snk1Kcal = exchangesToKcal(snk1Built.exch, null);
-  const snk2Kcal = exchangesToKcal(snk2Built.exch, null);
-  const slpKcal  = exchangesToKcal(slpBuilt.exch, null);
+  const snk1Kcal = exchangesToKcal(snk1Cost, null);
+  const snk2Kcal = exchangesToKcal(snk2Cost, null);
+  const slpKcal  = exchangesToKcal(sleepCost, null);
   const totalKcal = brkKcal + lunKcal + dinKcal + snk1Kcal + snk2Kcal + slpKcal;
   const target = Math.round(S.goalKcal||0);
   const gap = totalKcal - target;
@@ -1428,13 +1351,13 @@ function mealSuffix(ex, p, veg, proteinSource) {
 }
 
 const WEEK_PLANS = [
-  {day:'Δευτέρα', brk:'BRK_TOAST',  lun:'LUN_CHICKEN_RICE',   din:'DIN_FISH_POTATO'},
-  {day:'Τρίτη',   brk:'BRK_CEREAL', lun:'LUN_FISH_POTATO',    din:'DIN_CHICKEN_RICE'},
-  {day:'Τετάρτη', brk:'BRK_TOAST',  lun:'LUN_LOUVI_TUNA',     din:'DIN_OMELETTE'},
-  {day:'Πέμπτη',  brk:'BRK_CEREAL', lun:'LUN_FASOLAKIA_PORK', din:'DIN_TUNA_POTATO'},
-  {day:'Παρασκευή',brk:'BRK_TOAST', lun:'LUN_TUNA_POTATO',    din:'DIN_PASTA_MINCE'},
-  {day:'Σάββατο', brk:'BRK_CEREAL', lun:'LUN_PASTA_MINCE',    din:'DIN_SOUVLAKI_PITA'},
-  {day:'Κυριακή', brk:'BRK_TOAST',  lun:'LUN_BIFTEKI_BULGUR', din:'DIN_BIFTEKI_BULGUR'},
+  {day:'Δευτέρα', brk:'BRK_TOAST',  lun:'LUN_CHICKEN_RICE',   din:'DIN_FISH_POTATO',   snk1:'SNK_FRUIT', snk2:'SNK_FRUIT', sleep:'SNK_MILK'},
+  {day:'Τρίτη',   brk:'BRK_CEREAL', lun:'LUN_FISH_POTATO',    din:'DIN_CHICKEN_RICE',  snk1:'SNK_YOGURT_FRUIT', snk2:'SNK_NUTS', sleep:'SNK_MILK'},
+  {day:'Τετάρτη', brk:'BRK_TOAST',  lun:'LUN_LOUVI_TUNA',     din:'DIN_OMELETTE',      snk1:'SNK_FRUIT', snk2:'SNK_FRUIT', sleep:'SNK_YOGURT'},
+  {day:'Πέμπτη',  brk:'BRK_CEREAL', lun:'LUN_FASOLAKIA_PORK', din:'DIN_TUNA_POTATO',   snk1:'SNK_DRIEDFRUIT', snk2:'SNK_NUTS', sleep:'SNK_MILK'},
+  {day:'Παρασκευή',brk:'BRK_TOAST', lun:'LUN_TUNA_POTATO',    din:'DIN_PASTA_MINCE',   snk1:'SNK_FRUIT', snk2:'SNK_FRUIT', sleep:'SNK_MILK'},
+  {day:'Σάββατο', brk:'BRK_CEREAL', lun:'LUN_PASTA_MINCE',    din:'DIN_SOUVLAKI_PITA', snk1:'SNK_YOGURT_FRUIT', snk2:'SNK_NUTS', sleep:'SNK_MILK'},
+  {day:'Κυριακή', brk:'BRK_TOAST',  lun:'LUN_BIFTEKI_BULGUR', din:'DIN_BIFTEKI_BULGUR',snk1:'SNK_FRUIT', snk2:'SNK_FRUIT', sleep:'SNK_YOGURT'},
 ];
 
 // Smart print: portrait for Client Report (client handout),
@@ -1703,63 +1626,93 @@ function mealOptionsHtml(options, current){
   return options.map(o=>`<option value="${o.v}" ${o.v===current?'selected':''}>${o.l}</option>`).join('');
 }
 
-// ── SNACK OPTIONS (LEGACY — superseded by SNACK_BLOCKS) ──
-// NOTE (2026-06): this single-snack-code system is no longer used for kcal
-// calculations or display anywhere in the app — snacks are now built from
-// SNACK_BLOCKS (multi-component checkboxes) everywhere (1-Day Plan, 7-Day
-// Plan, Client Report). Kept here only in case per-day snack variety across
-// the 7-Day Plan is reintroduced later; do not wire this back in without
-// also updating calcDayTotalsForPlan/buildReport consistently.
-// Each option maps to a roughly-equivalent exchange portion (fruit, starch,
-// fat, or dairy) so swapping snacks keeps the day's totals realistic.
-// To add more later: add a {v, l, text} entry — both 1-Day and 7-Day pick it up.
+// ── SNACK OPTIONS ──
+// FIX (2026-06, dietitian feedback after real client testing): reverted
+// from a multi-component checkbox builder back to a single dropdown choice
+// per slot (Snack 1 / Snack 2 / Before Sleep) — simpler, faster to use in
+// a real session, and the clinician separately guides clients through the
+// Equivalents Guide for substitutions, so the meal plan itself only needs
+// to show ONE concrete recommendation per slot. Starch-based options
+// (crackers, oat bar) were removed per feedback — snacks here stay
+// fruit/dairy/fat based. "Yogurt" is available as an option in EVERY slot,
+// including Before Sleep. Fruit/dairy quantities shown are fully dynamic —
+// computed from getFruitDistribution()/getDairyDistribution() for the
+// specific slot, so they are always correct for any serving count (this
+// replaces the older checkbox-based approach, which silently dropped any
+// fruit/dairy servings whose checkbox wasn't manually ticked).
 const SNACK_OPTIONS = [
-  {v:'SNK_FRUIT',       l:'Φρούτο (1 φρούτο)',                text:'1 φρούτο (βλ. Οδηγό Ισοδυναμιών)'},
-  {v:'SNK_SMALLFRUIT',  l:'Μικρό φρούτο (1 φρούτο)',            text:'1 μικρό φρούτο (βλ. Οδηγό Ισοδυναμιών)'},
-  {v:'SNK_DRIEDFRUIT',  l:'Αποξηραμένα φρούτα (1 φρούτο)',      text:'2 κ.σ. αποξηραμένα φρούτα (π.χ. σταφίδες, αποξ. βερίκοκο)'},
-  {v:'SNK_CRACKERS',    l:'Κράκερ ολικής (1 άμυλο)',            text:'3 κράκερ ολικής άλεσης'},
-  {v:'SNK_OATBAR',      l:'Μπάρα βρώμης/δημητριακών (1 άμυλο + ½ λίπος)', text:'1 μπάρα βρώμης/δημητριακών (ελέγξτε ετικέτα συστατικών)'},
-  {v:'SNK_NUTS',        l:'Ξηροί καρποί (1 λίπος)',             text:'6 αμύγδαλα, 4 καρύδια, ή 2 καρύδια Βραζιλίας'},
-  {v:'SNK_COFFEE_NUTS', l:'Καφές + ξηροί καρποί (1 λίπος)',     text:'Καφές (χωρίς ζάχαρη) + 6 αμύγδαλα ή 4 καρύδια'},
-  {v:'SNK_MILK',        l:'Γάλα (1 φλ. / 1 γαλακτοκομικό)',     text:'1 φλ. γάλα 1,5%'},
-  {v:'SNK_MILK_HALF',   l:'Γάλα (½ φλ. / ½ γαλακτοκομικό)',     text:'½ φλ. γάλα 1,5%'},
-  {v:'SNK_MILK_DOUBLE', l:'Γάλα (2 φλ. / 2 γαλακτοκομικά)',     text:'2 φλ. γάλα 1,5%'},
-  {v:'SNK_COFFEE_MILK', l:'Καφές με γάλα (¼ φλ. γάλα)',          text:'Καφές με ¼ φλ. γάλα 1,5%'},
-  {v:'SNK_YOGURT',      l:'Γιαούρτι 2% (1 γαλακτοκομικό)',      text:'1 γιαούρτι 2% (170g)'},
-  {v:'SNK_YOGURT_FRUIT',l:'Γιαούρτι + φρούτο (1 γαλ. + 1 φρούτο)', text:'1 γιαούρτι 2% (170g) + 1 φρούτο'},
-  {v:'SNK_NONE',        l:'— Κανένα / None —',                  text:'—'},
+  {v:'SNK_FRUIT',        l:'🍎 Φρούτο'},
+  {v:'SNK_DRIEDFRUIT',   l:'🍇 Αποξηραμένα φρούτα'},
+  {v:'SNK_NUTS',         l:'🥜 Ξηροί καρποί'},
+  {v:'SNK_MILK',         l:'🥛 Γάλα'},
+  {v:'SNK_YOGURT',       l:'🍦 Γιαούρτι 2%'},
+  {v:'SNK_YOGURT_FRUIT', l:'🍦🍎 Γιαούρτι + φρούτο'},
+  {v:'SNK_COFFEE',       l:'☕ Καφές (σκέτος)'},
+  {v:'SNK_NONE',         l:'— Κανένα / None —'},
 ];
-// Distributes total fruit servings across breakfast + snack1 + snack2
-// so they add up to exactly S.ex.fruit. Breakfast always gets 1,
-// remainder split evenly across the two snack slots.
 
-// Returns the snack description for a given snack code.
-// slot: 'snk1' or 'snk2' — uses getFruitDistribution so counts add up exactly.
+// Returns the snack description for a given snack code at a given slot.
+// slot: 'snk1' | 'snk2' | 'sleep' — fruit/dairy counts come from the
+// corrected distribution functions, so they're always accurate for any
+// serving total and always sum to exactly S.ex.fruit / S.ex.dairy.
 function snackText(code, slot){
   const opt=SNACK_OPTIONS.find(o=>o.v===code);
   if(!opt || opt.v==='SNK_NONE') return '—';
-  if(['SNK_FRUIT','SNK_SMALLFRUIT','SNK_DRIEDFRUIT'].includes(code)){
-    const dist = getFruitDistribution();
-    const count = slot==='snk2' ? dist.snk2 : dist.snk1;
-    // If this slot's fruit allocation is 0 (e.g. very low total fruit
-    // servings), don't show a dash — show a small clinically sensible
-    // alternative instead, so the meal plan never looks "empty"
-    if(count===0) return '½ φλ. λαχανικά ωμά (βλ. Οδηγό Ισοδυναμιών)';
-    return `${count} φρούτ${count>1?'α':'ο'} (βλ. Οδηγό Ισοδυναμιών)`;
+  const fruitDist=getFruitDistribution();
+  const dairyDist=getDairyDistribution();
+  const fruitCount=fruitDist[slot]||0;
+  const dairyCount=dairyDist[slot]||0;
+  const dairyTxt=(amount)=>{
+    const cup=amount===0.5?'½ φλ.':amount===1?'1 φλ.':amount===1.5?'1½ φλ.':`${amount} φλ.`;
+    return `${cup} γάλα 1,5%`;
+  };
+  const yogurtTxt=(amount)=>`${amount===1?'1':amount} γιαούρτι 2% (~${Math.round(170*amount)}g)`;
+  if(code==='SNK_FRUIT'){
+    if(fruitCount===0) return '0 φρούτα προγραμματισμένα εδώ — δείτε Exchange System ή επιλέξτε κάτι άλλο';
+    return `${fruitCount} φρούτ${fruitCount>1?'α':'ο'} (βλ. Οδηγό Ισοδυναμιών)`;
   }
-  // Milk/dairy snacks reflect the actual S.ex.dairy distribution — so the
-  // displayed serving size always matches the total dairy exchanges set
-  // in the Exchange System, instead of being fixed at "1 cup" regardless.
-  if(['SNK_MILK','SNK_MILK_HALF','SNK_MILK_DOUBLE','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(code)){
-    const dist = getDairyDistribution();
-    const amount = slot==='snk1' ? dist.snk1 : dist.sleep;
-    if(amount===0) return '—';
-    const cupTxt = amount===0.5?'½ φλ.':amount===1?'1 φλ.':amount===1.5?'1½ φλ.':`${amount} φλ.`;
-    if(code==='SNK_YOGURT') return `${amount<1?'½':amount} γιαούρτι 2% (~${Math.round(170*amount)}g)`;
-    if(code==='SNK_YOGURT_FRUIT') return `${amount<1?'½':amount} γιαούρτι 2% + 1 φρούτο`;
-    return `${cupTxt} γάλα 1,5%`;
+  if(code==='SNK_DRIEDFRUIT'){
+    if(fruitCount===0) return '0 φρούτα προγραμματισμένα εδώ — δείτε Exchange System ή επιλέξτε κάτι άλλο';
+    return `${fruitCount>1?fruitCount+'x ':''}2 κ.σ. αποξηραμένα φρούτα (π.χ. σταφίδες, αποξ. βερίκοκο)`;
   }
-  return opt.text;
+  if(code==='SNK_NUTS') return '6 αμύγδαλα ή 4 καρύδια';
+  if(code==='SNK_MILK'){
+    if(dairyCount===0) return '0 γαλακτοκομικά προγραμματισμένα εδώ — δείτε Exchange System ή επιλέξτε κάτι άλλο';
+    return dairyTxt(dairyCount);
+  }
+  if(code==='SNK_YOGURT'){
+    if(dairyCount===0) return '0 γαλακτοκομικά προγραμματισμένα εδώ — δείτε Exchange System ή επιλέξτε κάτι άλλο';
+    return yogurtTxt(dairyCount);
+  }
+  if(code==='SNK_YOGURT_FRUIT'){
+    const y = dairyCount>0 ? yogurtTxt(dairyCount) : '1 γιαούρτι 2%';
+    const f = fruitCount>0 ? `${fruitCount} φρούτ${fruitCount>1?'α':'ο'}` : '1 φρούτο';
+    return `${y} + ${f}`;
+  }
+  if(code==='SNK_COFFEE') return 'Καφές (χωρίς ζάχαρη)';
+  return '—';
+}
+
+// Returns the exchange-system composition {fruit, starch, fat, dairy} for
+// a given snack code at a given slot — mirrors snackText()'s logic exactly
+// so the displayed text and the kcal calculation are always consistent.
+function snackExchangeCost(code, slot){
+  const fruitDist=getFruitDistribution();
+  const dairyDist=getDairyDistribution();
+  const fruitCount=fruitDist[slot]||0;
+  const dairyCount=dairyDist[slot]||0;
+  switch(code){
+    case 'SNK_FRUIT': case 'SNK_DRIEDFRUIT':
+      return {fruit:fruitCount, starch:0, fat:0, dairy:0};
+    case 'SNK_NUTS':
+      return {fruit:0, starch:0, fat:1, dairy:0};
+    case 'SNK_MILK': case 'SNK_YOGURT':
+      return {fruit:0, starch:0, fat:0, dairy:dairyCount};
+    case 'SNK_YOGURT_FRUIT':
+      return {fruit:fruitCount||1, starch:0, fat:0, dairy:dairyCount||1};
+    case 'SNK_COFFEE': case 'SNK_NONE': default:
+      return {fruit:0, starch:0, fat:0, dairy:0};
+  }
 }
 
 // Base default macro values per exchange (g CHO / g PRO / g FAT per exchange).
@@ -2448,22 +2401,18 @@ function saveBodyComp(){
 
 function buildOneDayPlan(){
   const brk=v('s-breakfast')||'BRK_TOAST', lun=v('s-lunch')||'LUN_CHICKEN_RICE', din=v('s-dinner')||'DIN_FISH_POTATO';
-  const snk1Blocks=getSnackSelection('s-snack1'), snk2Blocks=getSnackSelection('s-snack2'), slpBlocks=getSnackSelection('s-sleep');
-  S.mealSel={breakfast:brk,lunch:lun,dinner:din,snack1blocks:snk1Blocks,snack2blocks:snk2Blocks,sleepblocks:slpBlocks};
+  const snk1=v('s-snack1')||'SNK_FRUIT', snk2=v('s-snack2')||'SNK_FRUIT', sleep=v('s-sleep')||'SNK_MILK';
+  S.mealSel={breakfast:brk,lunch:lun,dinner:din,snack1:snk1,snack2:snk2,sleep:sleep};
   const ex=S.ex;
   const portions=getMealPortions();
   const day=calcDayTotals();
-  const dist=getFruitDistribution(), dairyDist=getDairyDistribution();
-  const snk1Built=buildSnackFromBlocks(snk1Blocks, dist.snk1, dairyDist.snk1);
-  const snk2Built=buildSnackFromBlocks(snk2Blocks, dist.snk2, 0);
-  const slpBuilt=buildSnackFromBlocks(slpBlocks, 0, dairyDist.sleep);
   const meals=[
     {time:'Πρωινό',      en:'Breakfast',     text:MEALS[brk]?MEALS[brk](ex,null):'',              kcal:day.brkKcal},
-    {time:'Σνακ 1',      en:'Snack 1',       text:snk1Built.text,                                  kcal:day.snk1Kcal},
+    {time:'Σνακ 1',      en:'Snack 1',       text:snackText(snk1,'snk1'),                          kcal:day.snk1Kcal},
     {time:'Μεσημεριανό', en:'Lunch',         text:MEALS[lun]?MEALS[lun](ex,portions.lunch):'',    kcal:day.lunKcal},
-    {time:'Σνακ 2',      en:'Snack 2',       text:snk2Built.text,                                  kcal:day.snk2Kcal},
+    {time:'Σνακ 2',      en:'Snack 2',       text:snackText(snk2,'snk2'),                          kcal:day.snk2Kcal},
     {time:'Βραδινό',     en:'Dinner',        text:MEALS[din]?MEALS[din](ex,portions.dinner):'',   kcal:day.dinKcal},
-    {time:'Πριν τον ύπνο',en:'Before sleep', text:slpBuilt.text,                                   kcal:day.slpKcal},
+    {time:'Πριν τον ύπνο',en:'Before sleep', text:snackText(sleep,'sleep'),                        kcal:day.slpKcal},
   ];
   const planEl=document.getElementById('oneday-plan');
   if(planEl) planEl.innerHTML=meals.filter(m=>m.text&&m.text!=='—').map(m=>
@@ -2476,17 +2425,25 @@ function buildOneDayPlan(){
   const gapColor=gapOk?'var(--teal-600)':gapAbs<=200?'var(--warn)':'var(--err)';
   const gapBadge=gapOk?'ok':gapAbs<=200?'warn':'err';
   let gapAdvice='';
-  // Detect unused dairy capacity: if S.ex.dairy is higher than what's
-  // actually reflected in the snack slots (no dairy block ticked anywhere),
-  // tell the clinician exactly how to fix it.
-  const dairyDistCheck = getDairyDistribution();
-  const snk1HasMilk = (S.mealSel.snack1blocks||[]).includes('milk');
-  const sleepHasMilk = (S.mealSel.sleepblocks||[]).includes('milk');
-  const sleepHasYogurt = (S.mealSel.sleepblocks||[]).includes('yogurt');
-  const unusedDairy = (dairyDistCheck.snk1>0 && !snk1HasMilk);
-  if(unusedDairy){
+  // Tell the clinician if a dairy or fruit serving is configured in the
+  // Exchange System but the snack dropdown currently selected for that slot
+  // doesn't actually use it (e.g. Snack 1 has 2 dairy servings assigned but
+  // "Φρούτο" is selected there instead of "Γάλα"/"Γιαούρτι").
+  const fruitDist=getFruitDistribution(), dairyDist=getDairyDistribution();
+  const slotUsesDairy = (code)=>['SNK_MILK','SNK_YOGURT','SNK_YOGURT_FRUIT'].includes(code);
+  const slotUsesFruit = (code)=>['SNK_FRUIT','SNK_DRIEDFRUIT','SNK_YOGURT_FRUIT'].includes(code);
+  const mismatches=[];
+  if(dairyDist.snk1>0 && !slotUsesDairy(snk1)) mismatches.push(`Snack 1 has ${dairyDist.snk1} dairy serving(s) assigned but a non-dairy option is selected`);
+  if(dairyDist.snk2>0 && !slotUsesDairy(snk2)) mismatches.push(`Snack 2 has ${dairyDist.snk2} dairy serving(s) assigned but a non-dairy option is selected`);
+  if(dairyDist.sleep>0 && !slotUsesDairy(sleep)) mismatches.push(`Before sleep has ${dairyDist.sleep} dairy serving(s) assigned but a non-dairy option is selected`);
+  if(fruitDist.snk1>0 && !slotUsesFruit(snk1)) mismatches.push(`Snack 1 has ${fruitDist.snk1} fruit serving(s) assigned but a non-fruit option is selected`);
+  if(fruitDist.snk2>0 && !slotUsesFruit(snk2)) mismatches.push(`Snack 2 has ${fruitDist.snk2} fruit serving(s) assigned but a non-fruit option is selected`);
+  if(fruitDist.sleep>0 && !slotUsesFruit(sleep)) mismatches.push(`Before sleep has ${fruitDist.sleep} fruit serving(s) assigned but a non-fruit option is selected`);
+  if(mismatches.length){
     gapAdvice+=`<div style="margin-top:8px;padding:8px 12px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:var(--amber-text)">
-      🥛 <strong>Unused dairy capacity:</strong> Exchange System has ${S.ex.dairy} dairy servings set, but Snack 1 doesn't have "Γάλα" ticked — tick it to use the full amount.
+      🔄 <strong>Unused Exchange System servings:</strong>
+      <ul style="margin:4px 0 0 16px;line-height:1.7">${mismatches.map(m=>`<li>${m}</li>`).join('')}</ul>
+      Change the dropdown for that slot to use the assigned amount.
     </div>`;
   }
   if(!gapOk && day.gap<0){
@@ -2525,39 +2482,32 @@ function buildOneDayPlan(){
 }
 
 // Calculates daily kcal totals for a specific day plan entry
-// (used by 7-Day plan where each day can have different main meals).
-// FIX (2026-06): snacks are now built from the SAME multi-component blocks
-// configured once in the 1-Day Plan (S.mealSel.snack1blocks/snack2blocks/
-// sleepblocks), instead of the old single-snack-code system (SNACK_EXCHANGES/
-// dayPlan.snk1 etc.), which was never updated when the multi-component
-// snack builder was added — it silently fell back to hardcoded defaults
-// (SNK_FRUIT/SNK_SMALLFRUIT/SNK_MILK) regardless of what was actually
-// ticked, causing the 7-Day Plan and Client Report to show/calc the wrong
-// snacks. Snacks are intentionally the SAME every day of the week (they're
-// derived from the daily exchange targets, which don't vary by day) —
-// only breakfast/lunch/dinner vary per day for menu rotation.
+// (used by 7-Day plan, where each day can have its own breakfast/lunch/
+// dinner AND its own snack1/snack2/sleep selection — true per-day variety,
+// per dietitian feedback after real client testing).
 function calcDayTotalsForPlan(dayPlan){
   const portions=getMealPortions();
   const brkComp  = MEAL_EXCHANGES[dayPlan.brk] || {};
   const lunComp  = MEAL_EXCHANGES[dayPlan.lun] || {};
   const dinComp  = MEAL_EXCHANGES[dayPlan.din] || {};
-  const dist = getFruitDistribution();
-  const dairyDist = getDairyDistribution();
-  const snk1Built = buildSnackFromBlocks(S.mealSel.snack1blocks||[], dist.snk1, dairyDist.snk1);
-  const snk2Built = buildSnackFromBlocks(S.mealSel.snack2blocks||[], dist.snk2, 0);
-  const slpBuilt  = buildSnackFromBlocks(S.mealSel.sleepblocks||[],  0,        dairyDist.sleep);
+  const snk1Code = dayPlan.snk1 || 'SNK_FRUIT';
+  const snk2Code = dayPlan.snk2 || 'SNK_FRUIT';
+  const sleepCode = dayPlan.sleep || 'SNK_MILK';
+  const snk1Cost = snackExchangeCost(snk1Code, 'snk1');
+  const snk2Cost = snackExchangeCost(snk2Code, 'snk2');
+  const sleepCost = snackExchangeCost(sleepCode, 'sleep');
 
-  const brkKcal  = exchangesToKcal({...brkComp, fruit: dist.brk}, null);
+  const brkKcal  = exchangesToKcal(brkComp, null);
   const lunKcal  = exchangesToKcal(lunComp, portions.lunch);
   const dinKcal  = exchangesToKcal(dinComp, portions.dinner);
-  const snk1Kcal = exchangesToKcal(snk1Built.exch, null);
-  const snk2Kcal = exchangesToKcal(snk2Built.exch, null);
-  const slpKcal  = exchangesToKcal(slpBuilt.exch, null);
+  const snk1Kcal = exchangesToKcal(snk1Cost, null);
+  const snk2Kcal = exchangesToKcal(snk2Cost, null);
+  const slpKcal  = exchangesToKcal(sleepCost, null);
   const totalKcal= brkKcal+lunKcal+dinKcal+snk1Kcal+snk2Kcal+slpKcal;
   const target   = Math.round(S.goalKcal||0);
   const gap      = totalKcal-target;
   return {brkKcal,lunKcal,dinKcal,snk1Kcal,snk2Kcal,slpKcal,totalKcal,target,gap,
-          snk1Text:snk1Built.text, snk2Text:snk2Built.text, slpText:slpBuilt.text};
+          snk1Text:snackText(snk1Code,'snk1'), snk2Text:snackText(snk2Code,'snk2'), slpText:snackText(sleepCode,'sleep')};
 }
 
 function buildSevenDay(){
@@ -2577,6 +2527,10 @@ function buildSevenDay(){
     if(!filteredBrk.find(o=>o.v===p.brk) && filteredBrk.length) p.brk=filteredBrk[di % filteredBrk.length].v;
     if(!filteredLun.find(o=>o.v===p.lun) && filteredLun.length) p.lun=filteredLun[di % filteredLun.length].v;
     if(!filteredDin.find(o=>o.v===p.din) && filteredDin.length) p.din=filteredDin[di % filteredDin.length].v;
+    // Backfill snack codes for clients/plans saved before per-day snacks existed
+    if(!p.snk1) p.snk1='SNK_FRUIT';
+    if(!p.snk2) p.snk2='SNK_FRUIT';
+    if(!p.sleep) p.sleep='SNK_MILK';
   });
   const ex=S.ex;
   const portions=getMealPortions();
@@ -2595,11 +2549,11 @@ function buildSevenDay(){
 
   const rows=[
     {key:'brk',  label:'🌅 Πρωινό'},
-    {key:'snk1', label:'🍎 Σνακ 1 ↳¹'},
+    {key:'snk1', label:'🍎 Σνακ 1'},
     {key:'lun',  label:'🍽️ Μεσημεριανό'},
-    {key:'snk2', label:'🍊 Σνακ 2 ↳¹'},
+    {key:'snk2', label:'🍊 Σνακ 2'},
     {key:'din',  label:'🌙 Βραδινό'},
-    {key:'sleep',label:'😴 Πριν ύπνο ↳¹'},
+    {key:'sleep',label:'😴 Πριν ύπνο'},
     {key:'kcal', label:'📊 Σύνολο kcal'},
   ];
 
@@ -2613,15 +2567,15 @@ function buildSevenDay(){
       if(row.key==='brk'){
         cell=sel('brk',di,filteredBrk,p.brk)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.brk]?MEALS[p.brk](ex,null):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.brkKcal} kcal</div>`;
       } else if(row.key==='snk1'){
-        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk1Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk1Kcal} kcal</div>`;
+        cell=sel('snk1',di,SNACK_OPTIONS,p.snk1)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk1Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk1Kcal} kcal</div>`;
       } else if(row.key==='lun'){
         cell=sel('lun',di,filteredLun,p.lun)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.lunKcal} kcal</div>`;
       } else if(row.key==='snk2'){
-        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk2Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk2Kcal} kcal</div>`;
+        cell=sel('snk2',di,SNACK_OPTIONS,p.snk2)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk2Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk2Kcal} kcal</div>`;
       } else if(row.key==='din'){
         cell=sel('din',di,filteredDin,p.din)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.dinKcal} kcal</div>`;
       } else if(row.key==='sleep'){
-        cell=`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.slpText}</div><div style="font-size:10px;color:var(--teal-600)">${dt.slpKcal} kcal</div>`;
+        cell=sel('sleep',di,SNACK_OPTIONS,p.sleep)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.slpText}</div><div style="font-size:10px;color:var(--teal-600)">${dt.slpKcal} kcal</div>`;
       } else if(row.key==='kcal'){
         cell=`<div style="font-weight:700;font-size:12px">${dt.totalKcal} kcal</div>
           <div style="font-size:10px;color:var(--text-muted)">Target: ${dt.target}</div>
@@ -2633,7 +2587,7 @@ function buildSevenDay(){
   });
 
   html+='</tbody></table></div>';
-  html+=`<div class="field-note" style="margin-top:8px">Each day shows kcal per meal and daily total vs target. ✅ = within ±100 kcal. Change breakfast/lunch/dinner using the dropdowns — kcal updates live. <strong>↳¹ Snacks are the same every day</strong>, built from the multi-component selections in <em>1-Day Plan</em> — edit them there to update all 7 days at once.</div>`;
+  html+=`<div class="field-note" style="margin-top:8px">Each day shows kcal per meal and daily total vs target. ✅ = within ±100 kcal. Every meal AND snack/before-sleep slot has its own dropdown, per day — change any of them and kcal updates live.</div>`;
   setEl('sevenday-body',html);
 }
 
@@ -2662,19 +2616,9 @@ function buildReport(){
   const brkText=MEALS[S.mealSel.breakfast]?MEALS[S.mealSel.breakfast](ex,null):'—';
   const lunText=MEALS[S.mealSel.lunch]?MEALS[S.mealSel.lunch](ex,portions.lunch):'—';
   const dinText=MEALS[S.mealSel.dinner]?MEALS[S.mealSel.dinner](ex,portions.dinner):'—';
-  // FIX (2026-06): build snack text from the actual multi-component blocks
-  // (S.mealSel.snack1blocks/snack2blocks/sleepblocks) — previously this used
-  // snackText(S.mealSel.snack1...) which read fields that are never set by
-  // the multi-component snack builder, so the report always showed the
-  // hardcoded default (plain fruit / small fruit / milk) regardless of what
-  // was actually configured in 1-Day Plan.
-  const dist=getFruitDistribution(), dairyDist=getDairyDistribution();
-  const snk1Built=buildSnackFromBlocks(S.mealSel.snack1blocks||[], dist.snk1, dairyDist.snk1);
-  const snk2Built=buildSnackFromBlocks(S.mealSel.snack2blocks||[], dist.snk2, 0);
-  const slpBuilt=buildSnackFromBlocks(S.mealSel.sleepblocks||[], 0, dairyDist.sleep);
-  const snk1Text=snk1Built.text;
-  const snk2Text=snk2Built.text;
-  const sleepText=slpBuilt.text;
+  const snk1Text=snackText(S.mealSel.snack1||'SNK_FRUIT','snk1');
+  const snk2Text=snackText(S.mealSel.snack2||'SNK_FRUIT','snk2');
+  const sleepText=snackText(S.mealSel.sleep||'SNK_MILK','sleep');
   const day=calcDayTotals();
   const gapOk=Math.abs(day.gap)<=100;
   setEl('report-body',`<div style="width:100%;font-family:Arial,sans-serif;font-size:13px">
@@ -2750,12 +2694,12 @@ function buildReport(){
         const ok=Math.abs(dt.gap)<=100;
         return `<tr style="background:${i%2===0?'#fff':'#f8fffe'};border-bottom:1px solid #e5e7eb">
           <td style="padding:5px;font-weight:700">${p.day}</td>
-          <td style="padding:5px">${MEALS[p.brk]?MEALS[p.brk](ex,null).split('–')[0].trim():''}</td>
-          <td style="padding:5px">${snk1Text}</td>
-          <td style="padding:5px">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch).split('(')[0].trim():''}</td>
-          <td style="padding:5px">${snk2Text}</td>
-          <td style="padding:5px">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner).split('(')[0].trim():''}</td>
-          <td style="padding:5px">${sleepText}</td>
+          <td style="padding:5px">${MEALS[p.brk]?MEALS[p.brk](ex,null):''}</td>
+          <td style="padding:5px">${dt.snk1Text}</td>
+          <td style="padding:5px">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch):''}</td>
+          <td style="padding:5px">${dt.snk2Text}</td>
+          <td style="padding:5px">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner):''}</td>
+          <td style="padding:5px">${dt.slpText}</td>
           <td style="padding:5px;text-align:right;font-weight:700;color:${ok?'#0f6e56':'#b45309'}">${dt.totalKcal}</td>
         </tr>`;
       }).join('')}
@@ -3459,7 +3403,7 @@ const SAVE_FIELD_IDS = [
   'p-id','p-name','p-date','p-age','p-sex','p-activity','p-height','p-weight','p-cal-adj','p-goal','p-meat','p-dairy','p-diet','p-trimester',
   'bc-bf','bc-water','bc-fatmass','bc-muscle','bc-metage','bc-visceral','bc-physique','bc-bone',
   'm-carb','m-protein',
-  's-breakfast','s-lunch','s-dinner',
+  's-breakfast','s-lunch','s-dinner','s-snack1','s-snack2','s-sleep',
   'i-goal','i-goal-why','i-goal-tried','i-lifestyle','i-exercise','i-steps','i-sleep','i-stress','i-typical-diet','i-skip-meals','i-cravings','i-intolerances','i-digestion','i-coach-notes',
   'n-diagnoses','n-medication','n-allergies','n-dislikes','n-adherence','n-clinician-notes',
   'en-must-weightloss','en-nrs-nutrition','en-nrs-disease','en-energy-approach','en-kcal-per-kg','en-protein-per-kg',
@@ -3513,17 +3457,6 @@ function applyState(state){
   if(state.exMeta) S.exMeta=state.exMeta;
   if(state.tracking) S.tracking=state.tracking;
   if(state.mealSel) S.mealSel={...S.mealSel,...state.mealSel};
-  // Restore snack checkbox UI to match the saved selection
-  ['snack1','snack2','sleep'].forEach(slot=>{
-    const elId = slot==='snack1'?'s-snack1':slot==='snack2'?'s-snack2':'s-sleep';
-    const blocksKey = slot+'blocks';
-    const el=document.getElementById(elId);
-    if(el && S.mealSel[blocksKey]){
-      el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-        cb.checked = S.mealSel[blocksKey].includes(cb.value);
-      });
-    }
-  });
   if(state.weekPlans) S.weekPlans=state.weekPlans;
   if(state.reportOptions){
     S.reportOptions=state.reportOptions;
@@ -3556,17 +3489,15 @@ function resetForm(){
   document.getElementById('s-breakfast').value='BRK_TOAST';
   document.getElementById('s-lunch').value='LUN_CHICKEN_RICE';
   document.getElementById('s-dinner').value='DIN_FISH_POTATO';
-  ['s-snack1','s-snack2','s-sleep'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
-  });
-  applySmartSnackDefaults();
+  document.getElementById('s-snack1').value='SNK_FRUIT';
+  document.getElementById('s-snack2').value='SNK_FRUIT';
+  document.getElementById('s-sleep').value='SNK_MILK';
   S.ex={fruit:2,veg:5,dairy:2,starch:0,protein:0,fat:0};
   S.exAuto={starch:true,protein:true,fat:true};
   S.exMeta=makeExMeta();
   S.lastDairyType='Moderate-fat'; S.lastMeatType='Lean';
   S.tracking=[]; S.intake={}; S.notes={}; S.labValues={};
-  S.mealSel={breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO'};
+  S.mealSel={breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO',snack1:'SNK_FRUIT',snack2:'SNK_FRUIT',sleep:'SNK_MILK'};
   S.weekPlans=WEEK_PLANS.map(p=>({...p}));
   S.reportOptions={oneDay:true,sevenDay:true};
   document.getElementById('en-must-acute') && (document.getElementById('en-must-acute').checked=false);
@@ -3764,10 +3695,9 @@ window.onload=function(){
   document.getElementById('s-breakfast').innerHTML=mealOptionsHtml(filteredMealOptions(BREAKFAST_OPTIONS,v('p-diet')||'Omnivore'),'BRK_TOAST');
   document.getElementById('s-lunch').innerHTML=mealOptionsHtml(filteredMealOptions(LUNCH_OPTIONS,v('p-diet')||'Omnivore'),'LUN_CHICKEN_RICE');
   document.getElementById('s-dinner').innerHTML=mealOptionsHtml(filteredMealOptions(DINNER_OPTIONS,v('p-diet')||'Omnivore'),'DIN_FISH_POTATO');
-  document.getElementById('s-snack1').innerHTML=snackBlockOptionsHtml();
-  document.getElementById('s-snack2').innerHTML=snackBlockOptionsHtml();
-  document.getElementById('s-sleep').innerHTML=snackBlockOptionsHtml();
-  applySmartSnackDefaults();
+  document.getElementById('s-snack1').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_FRUIT');
+  document.getElementById('s-snack2').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_FRUIT');
+  document.getElementById('s-sleep').innerHTML=mealOptionsHtml(SNACK_OPTIONS,'SNK_MILK');
   calcAll(); calcMacros(); renderDashboard();
   tryRestoreAutosave();
   // Auto-save on any input/change anywhere in the form
