@@ -955,6 +955,32 @@ tr:hover td { background: var(--bg-hover); }
 
         <div class="section-label">4 · INITIATION &amp; ROUTE — REFERENCE ONLY (your team decides)</div>
         <div id="en-guidance"></div>
+
+        <div class="section-label">5 · HOME ENTERAL NUTRITION (HEN) — TRANSITION &amp; ONGOING CARE</div>
+        <div class="alert info"><span>ℹ️ Source: ESPEN guideline on home enteral nutrition, Clin Nutr 2020;39:5–22. This section covers the parts most relevant to dietitian-led care (access device timing, formula selection, monitoring, termination) — device placement/site-care technique stays with the medical/nursing team.</span></div>
+
+        <div class="form-grid two" style="margin-bottom:10px">
+          <div class="form-field">
+            <label>Expected duration of enteral feeding</label>
+            <select id="hen-duration" onchange="calcHenAccessDevice()">
+              <option value="short">Short-term (up to 4–6 weeks)</option>
+              <option value="long">Long-term (more than 4–6 weeks)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Patient's main GI/metabolic situation</label>
+            <select id="hen-situation" onchange="calcHenFormulaSelection()">
+              <option value="none">None of these / standard tolerance</option>
+              <option value="diarrhea">Diarrhea</option>
+              <option value="constipation">Constipation</option>
+              <option value="diabetes">Diabetes</option>
+              <option value="diarrhea_diabetes">Diarrhea + Diabetes</option>
+            </select>
+          </div>
+        </div>
+        <div id="hen-access-result" style="margin-bottom:10px"></div>
+        <div id="hen-formula-result" style="margin-bottom:10px"></div>
+        <div id="hen-reference"></div>
       </div>
     </div>
   </div>
@@ -2048,7 +2074,7 @@ function nav(id) {
   if(id==='report') buildReport();
   if(id==='engine') renderEngine();
   if(id==='tracking') renderTracking();
-  if(id==='enteral'){ renderEAT10Items(); calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula(); renderEnteralGuidance(); }
+  if(id==='enteral'){ renderEAT10Items(); calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula(); renderEnteralGuidance(); calcHenAccessDevice(); calcHenFormulaSelection(); renderHenReference(); }
 }
 
 function calcAll() {
@@ -2942,6 +2968,51 @@ function renderEnteralGuidance(){
   `);
 }
 
+// ── HOME ENTERAL NUTRITION (HEN) — added from ESPEN guideline on home
+// enteral nutrition, Clin Nutr 2020;39:5-22. Scope deliberately limited to
+// what a dietitian actively decides or monitors (access-device TIMING and
+// formula selection, monitoring schedule, termination criteria) — NOT
+// device placement technique, stoma/wound care, or drug-administration
+// mechanics through the tube, which stay with medical/nursing/pharmacy.
+function calcHenAccessDevice(){
+  const duration = v('hen-duration');
+  let html;
+  if(duration==='short'){
+    html = `<div class="alert ok"><span><strong>Nasogastric (NG) tube</strong> is appropriate for short-term feeding (up to 4–6 weeks) — ESPEN Grade 0, Consensus 90%. Even longer periods are possible with fine-bore NG tubes if PEG/RIG isn't suitable for this patient.</span></div>`;
+  } else {
+    html = `<div class="alert ok"><span><strong>PEG (or PEJ if indicated)</strong> is the preferred access device for long-term HEN — ESPEN Grade B, Strong consensus 93%. PEG is generally preferred over surgical gastrostomy (lower complications, cost, operating time — Grade B). Once placed: adults with uncomplicated gastrostomy can commence EN within 2–4 hours post-procedure (Grade A, Strong consensus 100%) — no need for a traditional slow water-then-formula start.</span></div>`;
+  }
+  setEl('hen-access-result', html);
+}
+
+function calcHenFormulaSelection(){
+  const situation = v('hen-situation');
+  const cards = {
+    none: `<div class="alert ok"><span>Standard commercial formula is appropriate (ESPEN Grade 0, Strong consensus 92%) — no specific modification indicated by the situation selected.</span></div>`,
+    diarrhea: `<div class="alert warn"><span><strong>Fiber-containing formula should normally be used</strong> — ESPEN Grade A, Strong consensus 92%. A mix of soluble and insoluble fiber is generally most effective; this is one of the few Grade A recommendations in this guideline, reflecting strong RCT evidence.</span></div>`,
+    constipation: `<div class="alert warn"><span><strong>Fiber-containing formula should be used</strong> — ESPEN Grade B, Strong consensus 96%.</span></div>`,
+    diabetes: `<div class="alert warn"><span><strong>A diabetes-specific formula MAY be used</strong> (lower sugar content, slowly-digestible carbohydrate, fat enriched in unsaturated/monounsaturated fatty acids) — ESPEN Grade 0, but only <strong>Majority agreement (60%)</strong> — notably weaker consensus than most other recommendations in this guideline. Standard formula with attentive glycemic monitoring remains a reasonable alternative; this is a "may consider," not a strong directive.</span></div>`,
+    diarrhea_diabetes: `<div class="alert warn"><span><strong>Both apply:</strong> fiber-containing formula for the diarrhea (Grade A) — ideally also diabetes-appropriate (lower sugar, MUFA-enriched) if a combined product is available (Grade 0, Majority agreement 60% only). If no single product covers both well, prioritize the fiber/diarrhea management (the stronger-evidence recommendation) and monitor glycemic control separately.</span></div>`,
+  };
+  setEl('hen-formula-result', cards[situation] || cards.none);
+  // Auto-trigger the access device card too, in case it hasn't rendered yet
+  if(!document.getElementById('hen-access-result').innerHTML) calcHenAccessDevice();
+}
+
+function renderHenReference(){
+  setEl('hen-reference', `
+    <div class="card" style="background:var(--bg-page)">
+      <div class="card-body" style="font-size:13px;line-height:1.7">
+        <p><strong>Blenderized / home-made feeds:</strong> ESPEN advises against routinely using home-made blenderized admixtures in place of commercial formula or commercial "whole food" products — they're less standardized and carry more contamination/safety risk (GPP, but only Majority/Consensus 63–76% agreement — not strong consensus, so this is a softer recommendation than most others here, and some patients/families may still prefer it with appropriate safety counseling).</p>
+        <p><strong>Monitoring (dietitian-relevant):</strong> body weight, body composition (fat-free/muscle mass), hydration status, and functional status (e.g. handgrip strength) are the primary efficacy markers — track these over food/lab values alone. Functional decline can show up before weight does. No fixed universal interval is specified — local protocol and the patient's stability should set the schedule (more frequent early on, e.g. monthly, spacing out once stable).</p>
+        <p><strong>Quality of life (QoL):</strong> should be measured periodically throughout HEN, not just at initiation — it's a distinct, patient-centered outcome from nutritional/functional status and often the thing that actually drives whether HEN feels sustainable to the patient and family.</p>
+        <p><strong>When to consider stopping HEN:</strong> the desired weight has been reached AND oral intake alone now meets the patient's maintenance needs. (Decisions to stop for other reasons — e.g. a severe complication, transfer to a facility, or end-of-life care — are multidisciplinary/medical decisions, not purely nutritional ones.)</p>
+        <div class="field-note">Source: ESPEN guideline on home enteral nutrition, Clin Nutr 2020;39:5–22. This summary covers monitoring/formula/termination only — device placement, stoma/wound care technique, and drug-administration mechanics through the tube are nursing/medical/pharmacy scope and not reproduced here.</div>
+      </div>
+    </div>
+  `);
+}
+
 function renderEngine(){
   calcExchanges();
   const ex=S.ex;
@@ -3420,6 +3491,7 @@ const SAVE_FIELD_IDS = [
   'n-diagnoses','n-medication','n-allergies','n-dislikes','n-adherence','n-clinician-notes',
   'en-must-weightloss','en-nrs-nutrition','en-nrs-disease','en-energy-approach','en-kcal-per-kg','en-protein-per-kg',
   'en-formula-preset','en-formula-kcal-ml','en-formula-protein-100ml','en-infusion-hours','en-bolus-feeds',
+  'hen-duration','hen-situation',
   ...EAT10_ITEMS.map((_,i)=>'en-eat10-q'+(i+1)),
   ...LAB_TESTS.map(t=>'lab-'+t.key)
 ];
@@ -3491,6 +3563,7 @@ function applyState(state){
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
   calcAll(); calcBodyComp(); calcMacros();
   calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
+  calcHenAccessDevice(); calcHenFormulaSelection();
 }
 
 // Resets the whole form/state back to a blank "new client" template
@@ -3529,10 +3602,12 @@ function resetForm(){
   });
   const enDefaults={'en-kcal-per-kg':27,'en-protein-per-kg':1.3,'en-formula-kcal-ml':1.0,'en-formula-protein-100ml':4.0,'en-infusion-hours':20,'en-bolus-feeds':5};
   Object.entries(enDefaults).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  ['hen-duration','hen-situation'].forEach(id=>{ const el=document.getElementById(id); if(el) el.selectedIndex=0; });
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
   try{localStorage.removeItem('nutriengine_autosave');}catch(e){}
   calcAll(); calcBodyComp(); calcMacros();
   calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
+  calcHenAccessDevice(); calcHenFormulaSelection();
 }
 
 function newClient(){
