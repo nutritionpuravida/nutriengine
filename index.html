@@ -441,7 +441,7 @@ tr:hover td { background: var(--bg-hover); }
   <button class="nav-item" onclick="nav('enteral')">🏥 Enteral Nutrition</button>
   <div class="nav-group-label">Clinical</div>
   <button class="nav-item" onclick="nav('engine')">⚙️ Engine Control <span class="nav-badge" id="engine-badge">!</span></button>
-  <div class="sidebar-footer">NutriEngine v55 · Fingerprint <span id="build-date-sidebar" style="font-family:monospace">—</span><br>Fill green inputs · Avoid overwriting formulas</div>
+  <div class="sidebar-footer">NutriEngine v55 · Fingerprint <span id="build-date-sidebar" style="font-family:monospace">—</span><br>Opened: <span id="opened-date-sidebar">—</span><br>Fill green inputs · Avoid overwriting formulas</div>
 </nav>
 
 <div class="main">
@@ -451,6 +451,7 @@ tr:hover td { background: var(--bg-hover); }
       <div class="topbar-sub" id="page-sub">Quick overview · Engine status · Today's plan</div>
     </div>
     <div class="topbar-actions">
+      <span class="no-print" style="font-size:11px;color:var(--text-muted);background:var(--bg-page);padding:4px 8px;border-radius:6px;border:1px solid var(--border)" title="Opened-on date — this is today's date, whenever you happen to open this file. It does NOT tell you when the content was last edited; use the fingerprint next to it for that (identical content always produces an identical fingerprint).">📅 <span id="opened-date-topbar">—</span></span>
       <span class="no-print" style="font-size:11px;color:var(--text-muted);background:var(--bg-page);padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-family:monospace" title="Content fingerprint — computed fresh from this exact file's content every time it loads, so it can never be a stale label. Two files with identical content always show the same fingerprint.">v55 · <span id="build-date-topbar">—</span></span>
       <div class="user-chip no-print" id="user-chip" style="display:none">
         <span id="user-email"></span>
@@ -3745,6 +3746,20 @@ window.onload=function(){
     const topbarEl = document.getElementById('build-date-topbar');
     if(sidebarEl) sidebarEl.textContent = fingerprint;
     if(topbarEl) topbarEl.textContent = fingerprint;
+
+    // Human-readable "opened on" date, shown alongside the fingerprint —
+    // requested back after the fingerprint-only version. This is
+    // intentionally just today's date (whenever the file happens to be
+    // opened), NOT a record of when the content was last edited — a real
+    // per-edit date would require a build server this static file doesn't
+    // have, and a hand-typed one is exactly what caused the original bug
+    // (see the fingerprint comment above). The fingerprint remains the only
+    // way to actually verify two copies share identical content.
+    const openedDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const openedSidebarEl = document.getElementById('opened-date-sidebar');
+    const openedTopbarEl = document.getElementById('opened-date-topbar');
+    if(openedSidebarEl) openedSidebarEl.textContent = openedDate;
+    if(openedTopbarEl) openedTopbarEl.textContent = openedDate;
   }catch(e){ /* non-critical — leave the '—' placeholder if this ever fails */ }
 
   document.getElementById('p-date').value=new Date().toISOString().split('T')[0];
