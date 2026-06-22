@@ -1,13 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="el" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="NutriFlow">
+<meta name="apple-mobile-web-app-title" content="NutriEngine">
 <meta name="theme-color" content="#0F6E56">
-<title>NutriFlow — Smart nutrition software</title>
+<title>NutriEngine — Clinical Nutrition Toolkit</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230F6E56'/%3E%3Ctext x='50' y='62' font-size='50' text-anchor='middle'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E">
 <style>
 
@@ -59,7 +59,6 @@ select option { background-color: var(--bg-surface); color: var(--text-primary);
 .sidebar { width: var(--nav-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; transition: transform .25s; z-index: 100; }
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .topbar { height: 56px; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0; }
-.topbar-logo { width: 26px; height: 26px; flex-shrink: 0; display:flex; align-items:center; justify-content:center; font-size:22px; line-height:1; }
 .content { flex: 1; overflow-y: auto; padding: 16px; }
 
 /* ─── SIDEBAR ELEMENTS ─── */
@@ -88,11 +87,11 @@ select option { background-color: var(--bg-surface); color: var(--text-primary);
 .theme-toggle:hover { background: var(--bg-hover); }
 
 /* ─── AUTH SCREEN ─── */
-#auth-screen, #subscription-screen {
+#auth-screen {
   position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center;
   background: var(--bg-page); padding: 20px;
 }
-#auth-screen.hidden, #subscription-screen.hidden { display: none; }
+#auth-screen.hidden { display: none; }
 .auth-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; max-width: 380px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,.15); }
 .auth-logo { text-align: center; margin-bottom: 20px; }
 .auth-logo .icon { font-size: 40px; }
@@ -110,11 +109,6 @@ select option { background-color: var(--bg-surface); color: var(--text-primary);
 .auth-submit { width: 100%; padding: 10px; border-radius: 6px; border: none; background: var(--teal-600); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px; }
 .auth-submit:hover { background: var(--teal-800); }
 .auth-submit:disabled { opacity: .6; cursor: not-allowed; }
-.auth-submit.secondary { background: var(--bg-page); color: var(--text-primary); border: 1px solid var(--border-strong); }
-.auth-submit.secondary:hover { background: var(--teal-50); color: var(--teal-800); }
-.subscription-status { padding: 10px 12px; border-radius: 6px; font-size: 13px; margin: 10px 0; background: var(--bg-page); border: 1px solid var(--border); }
-.subscription-plan { border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 14px; margin: 12px 0; background: var(--bg-input); }
-.subscription-plan strong { display:block; font-size:16px; margin-bottom:4px; }
 .user-chip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
 .user-chip button { background: none; border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; color: var(--text-secondary); }
 .user-chip button:hover { background: var(--bg-hover); }
@@ -401,8 +395,8 @@ tr:hover td { background: var(--bg-hover); }
   <div class="auth-card">
     <div class="auth-logo">
       <div class="icon">🌿</div>
-      <div class="title">NutriFlow</div>
-      <div class="sub">Smart nutrition software</div>
+      <div class="title">NutriEngine</div>
+      <div class="sub">Clinical Nutrition Toolkit</div>
     </div>
     <div class="auth-tabs">
       <div class="auth-tab active" id="tab-signin" onclick="setAuthTab('signin')">Sign In</div>
@@ -421,31 +415,12 @@ tr:hover td { background: var(--bg-hover); }
   </div>
 </div>
 
-<!-- SUBSCRIPTION GATE -->
-<div id="subscription-screen" class="hidden">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <div class="icon">🌿</div>
-      <div class="title">NutriFlow</div>
-      <div class="sub">Smart nutrition software</div>
-    </div>
-    <div class="subscription-status" id="subscription-message">Checking subscription…</div>
-    <div class="subscription-plan">
-      <strong>NutriFlow Professional</strong>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.5">Client profiles, exchange system, 1-day and 7-day plans, blood analysis, tracking, recipes, and reports for your dietetic practice.</div>
-    </div>
-    <button class="auth-submit" onclick="startStripeCheckout()">Subscribe to continue</button>
-    <button class="auth-submit secondary" onclick="openBillingPortal()">Manage billing</button>
-    <button class="auth-submit secondary" onclick="handleSignOut()">Sign out</button>
-  </div>
-</div>
-
 <div class="app">
 
 <nav class="sidebar">
   <div class="logo-area">
     <div class="logo-icon">🌿</div>
-    <div class="logo-text">NutriFlow <span>Smart nutrition software</span></div>
+    <div class="logo-text">NutriEngine <span>Clinical Toolkit v52</span></div>
   </div>
   <div class="client-chip">
     <div class="cc-label">Active client</div>
@@ -464,21 +439,19 @@ tr:hover td { background: var(--bg-hover); }
   <button class="nav-item" onclick="nav('exchanges')">🔄 Exchange System</button>
   <button class="nav-item" onclick="nav('oneday')">☀️ 1-Day Plan</button>
   <button class="nav-item" onclick="nav('sevenday')">📅 7-Day Plan</button>
-  <button class="nav-item" onclick="nav('fooddb')">🔎 Food Database</button>
-  <button class="nav-item" onclick="nav('recipes')">🍲 Recipes</button>
   <div class="nav-group-label">Reports & Tracking</div>
   <button class="nav-item" onclick="nav('report')">📄 Client Report</button>
   <button class="nav-item" onclick="nav('tracking')">📈 Progress Tracking</button>
   <button class="nav-item" onclick="nav('equivalents')">📖 Equivalents Guide</button>
-<div class="nav-group-label">Clinical</div>
+  <div class="nav-group-label">Inpatient / Hospital Practice</div>
+  <button class="nav-item" onclick="nav('enteral')">🏥 Enteral Nutrition</button>
+  <div class="nav-group-label">Clinical</div>
   <button class="nav-item" onclick="nav('engine')">⚙️ Engine Control <span class="nav-badge" id="engine-badge">!</span></button>
-  <button class="nav-item" onclick="nav('account')">💳 Account / Subscription</button>
-  <div class="sidebar-footer">NutriFlow v1 · Fingerprint <span id="build-date-sidebar" style="font-family:monospace">—</span><br>Opened: <span id="opened-date-sidebar">—</span><br>Fill green inputs · Avoid overwriting formulas</div>
+  <div class="sidebar-footer">NutriEngine v55 · Fingerprint <span id="build-date-sidebar" style="font-family:monospace">—</span><br>Opened: <span id="opened-date-sidebar">—</span><br>Fill green inputs · Avoid overwriting formulas</div>
 </nav>
 
 <div class="main">
   <div class="topbar"><button class="hamburger" onclick="openSidebar()" aria-label="Menu">☰</button>
-    <div class="topbar-logo">🌿</div>
     <div>
       <div class="topbar-title" id="page-title">Dashboard</div>
       <div class="topbar-sub" id="page-sub">Quick overview · Engine status · Today's plan</div>
@@ -638,20 +611,21 @@ tr:hover td { background: var(--bg-hover); }
         <div class="section-label">CLINICAL SETTINGS</div>
         <div class="form-grid">
           <div class="form-field full">
-            <label>Primary condition (select one)</label>
+            <label>Conditions (select all that apply — combined guidance & most restrictive caps applied)</label>
             <div id="p-conditions" style="display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg-input)">
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Obesity" onclick="onConditionRadioClick(this)" style="width:auto"> Weight Management</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Diabetes" onclick="onConditionRadioClick(this)" style="width:auto"> Diabetes Type 2</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Dyslipidemia" onclick="onConditionRadioClick(this)" style="width:auto"> High Cholesterol (Dyslipidemia)</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Hypertension" onclick="onConditionRadioClick(this)" style="width:auto"> Hypertension</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="PCOS" onclick="onConditionRadioClick(this)" style="width:auto"> PCOS</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Thyroid" onclick="onConditionRadioClick(this)" style="width:auto"> Hypothyroidism / Hashimoto's</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="IBS" onclick="onConditionRadioClick(this)" style="width:auto"> IBS / Digestive Issues</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="FoodIntolerance" onclick="onConditionRadioClick(this)" style="width:auto"> Food Intolerances / Allergies</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Pregnancy" onclick="onConditionRadioClick(this)" style="width:auto"> Pregnancy</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Menopause" onclick="onConditionRadioClick(this)" style="width:auto"> Menopause</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="Sports" onclick="onConditionRadioClick(this)" style="width:auto"> Sports Nutrition / Performance</label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="radio" name="p-condition" value="General" onclick="onConditionRadioClick(this)" style="width:auto"> Healthy Eating (no condition)</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Diabetes" onchange="calcAll()" style="width:auto"> Diabetes / Διαβήτης</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="CKD" onchange="calcAll()" style="width:auto"> CKD / ΧΝΝ</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Hemodialysis" onchange="calcAll()" style="width:auto"> Hemodialysis / Αιμοκάθαρση</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Hypertension" onchange="calcAll()" style="width:auto"> Hypertension / Υπέρταση</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Dyslipidemia" onchange="calcAll()" style="width:auto"> Dyslipidemia / Δυσλιπιδαιμία</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="PCOS" onchange="calcAll()" style="width:auto"> PCOS</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="GERD" onchange="calcAll()" style="width:auto"> GERD / Παλινδρόμηση</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="IBS" onchange="calcAll()" style="width:auto"> IBS / Ευερέθιστο έντερο</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Obesity" onchange="calcAll()" style="width:auto"> Obesity / Παχυσαρκία</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Thyroid" onchange="calcAll()" style="width:auto"> Thyroid / Hashimoto's</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Celiac" onchange="calcAll()" style="width:auto"> Celiac / Κοιλιοκάκη</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Thalassemia" onchange="calcAll()" style="width:auto"> Thalassemia / Μεσογ. Αναιμία</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap"><input type="checkbox" value="Pregnancy" onchange="onPregnancyToggle()" style="width:auto"> Pregnancy / Εγκυμοσύνη</label>
             </div>
             <div id="pregnancy-trimester-field" class="form-field" style="display:none;margin-top:10px;max-width:260px">
               <label>Pregnancy stage / Στάδιο εγκυμοσύνης</label>
@@ -661,7 +635,7 @@ tr:hover td { background: var(--bg-hover); }
                 <option value="3">3ο Τρίμηνο (28+ εβδ.)</option>
               </select>
             </div>
-            <div class="field-note">Leave unselected for a general/healthy population plan. NutriFlow supports one primary condition at a time for clearer clinical logic.</div>
+            <div class="field-note">Leave all unchecked for a general/healthy population plan. Multiple selections combine guidance and use the most restrictive caps (e.g. CKD + Diabetes → low-protein AND low-GI logic together).</div>
           </div>
           <div class="form-field"><label>Goal</label>
             <select id="p-goal" onchange="calcAll()">
@@ -755,7 +729,7 @@ tr:hover td { background: var(--bg-hover); }
           <div class="section-label">MACRO BREAKDOWN</div>
           <table><thead><tr><th>Macro</th><th>%</th><th>kcal</th><th>grams</th></tr></thead><tbody id="macro-table-body"></tbody></table>
           <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button class="btn" onclick="applyConditionMacros()">Apply suggested for selected condition</button>
+            <button class="btn" onclick="applyConditionMacros()">Apply suggested for current condition</button>
             <span style="font-size:12px;color:var(--text-muted)">← fills the % fields above based on selected conditions</span>
           </div>
           <div id="macro-explanation" style="display:none;margin-top:10px;padding:10px;background:var(--teal-50);border-radius:8px;font-size:12px;line-height:1.6"></div>
@@ -809,10 +783,6 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-header"><span class="card-title">☀️ SYSTEM — 1-Day Auto Plan</span></div>
       <div class="card-body">
         <div class="alert info">ℹ️ Dropdowns change meal combinations. Exchange totals come from Exchange System. Main meals absorb starch/protein/fat. Snacks use fruit/dairy.</div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
-          <button class="btn primary" id="meal-lang-gr-1day" onclick="setMealLanguage('GR')">GR</button>
-          <button class="btn" id="meal-lang-en-1day" onclick="setMealLanguage('EN')">EN</button>
-        </div>
         <div class="form-grid three" style="margin-bottom:16px">
           <div class="form-field"><label>Πρωινό / Breakfast</label>
             <select id="s-breakfast" onchange="buildOneDayPlan()"></select>
@@ -851,13 +821,7 @@ tr:hover td { background: var(--bg-hover); }
   <div class="page" id="page-sevenday">
     <div class="card">
       <div class="card-header"><span class="card-title">📅 SYSTEM — 7-Day Meal Plan (Αυτόματο Πλάνο 7 Ημερών)</span></div>
-      <div class="card-body">
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
-          <button class="btn primary" id="meal-lang-gr-7day" onclick="setMealLanguage('GR')">GR</button>
-          <button class="btn" id="meal-lang-en-7day" onclick="setMealLanguage('EN')">EN</button>
-        </div>
-        <div id="sevenday-body"></div>
-      </div>
+      <div class="card-body" id="sevenday-body"></div>
     </div>
   </div>
 
@@ -877,9 +841,8 @@ tr:hover td { background: var(--bg-hover); }
             <input type="checkbox" id="rep-include-7day" checked onchange="onReportOptionsChange()" style="width:18px;height:18px;accent-color:var(--teal-600)">
             📅 Include 7-Day Meal Plan
           </label>
-          <button class="btn primary" onclick="printPage()">🖨️ Print / Save PDF</button>
         </div>
-        <div class="field-note" style="margin-top:8px">Check/uncheck to choose which meal plan appears in the printed report. Use Print / Save PDF and choose “Save as PDF” in the browser print dialog.</div>
+        <div class="field-note" style="margin-top:8px">Check/uncheck to choose which meal plan appears in the printed report. Both are included by default.</div>
       </div>
     </div>
     <div class="card">
@@ -912,6 +875,140 @@ tr:hover td { background: var(--bg-hover); }
     </div>
   </div>
 
+  <!-- ENTERAL NUTRITION (hospital / inpatient practice) -->
+  <div class="page" id="page-enteral">
+    <div class="card">
+      <div class="card-header"><span class="card-title">🏥 INPUT — Enteral Nutrition Planning (Εντερική Σίτιση)</span></div>
+      <div class="card-body">
+        <div class="alert info"><span>ℹ️ This module is a calculation aid for inpatient/enteral feeding plans, based on the ESPEN practical guideline for polymorbid medical inpatients (Clin Nutr 2024;43:674–691). It computes targets and formula math — it does <strong>not</strong> decide the feeding route (oral/EN/PN) for you. That decision always requires bedside clinical assessment by the treating team, under your supervisor's direction.</span></div>
+
+        <div class="section-label">1 · MALNUTRITION RISK SCREENING</div>
+        <div class="field-note" style="margin-bottom:10px">Pick whichever screening tool your ward uses — MUST and NRS-2002 are both ESPEN-endorsed.</div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">MUST — Malnutrition Universal Screening Tool</span></div>
+          <div class="card-body">
+            <div class="form-grid three">
+              <div class="form-field"><label>BMI (from Client Profile)</label><input type="text" id="en-must-bmi-display" readonly style="background:var(--bg-page);cursor:not-allowed"></div>
+              <div class="form-field"><label>Weight loss in last 3–6 months (%)</label><input type="number" id="en-must-weightloss" placeholder="—" step="0.1" min="0" oninput="calcMUST()"></div>
+              <div class="form-field" style="display:flex;align-items:flex-end;padding-bottom:8px">
+                <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="en-must-acute" onchange="calcMUST()" style="width:auto"> Acutely ill AND likely no nutritional intake &gt;5 days</label>
+              </div>
+            </div>
+            <div id="en-must-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">NRS-2002 — Nutritional Risk Screening</span></div>
+          <div class="card-body">
+            <div class="form-grid two">
+              <div class="form-field">
+                <label>Nutritional status impairment</label>
+                <select id="en-nrs-nutrition" onchange="calcNRS()">
+                  <option value="0">0 — Normal nutritional status</option>
+                  <option value="1">1 — Mild: wt loss &gt;5%/3mo OR intake &lt;50–75% of needs last week</option>
+                  <option value="2">2 — Moderate: wt loss &gt;5%/2mo OR BMI 18.5–20.5 + impaired condition OR intake 25–50%</option>
+                  <option value="3">3 — Severe: wt loss &gt;5%/1mo OR BMI &lt;18.5 + impaired condition OR intake 0–25%</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Disease severity</label>
+                <select id="en-nrs-disease" onchange="calcNRS()">
+                  <option value="0">0 — Normal nutritional requirements</option>
+                  <option value="1">1 — Mild: hip fracture, chronic disease w/ acute complication (cirrhosis, COPD, chronic hemodialysis, diabetes, oncology)</option>
+                  <option value="2">2 — Moderate: major abdominal surgery, stroke, severe pneumonia, hematologic malignancy</option>
+                  <option value="3">3 — Severe: head injury, bone marrow transplant, ICU (APACHE &gt;10)</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-note">Age ≥70 adds +1 automatically (from Client Profile age).</div>
+            <div id="en-nrs-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title" style="font-size:14px">EAT-10 — Swallowing / Dysphagia Screen</span></div>
+          <div class="card-body">
+            <div class="field-note" style="margin-bottom:8px">Each item 0 (no problem) – 4 (severe problem). Directly relevant to the oral-vs-EN route decision.</div>
+            <div id="en-eat10-items" class="form-grid three"></div>
+            <div id="en-eat10-result" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div class="section-label">2 · ENERGY & PROTEIN TARGETS</div>
+        <div class="form-grid two">
+          <div class="form-field">
+            <label>Energy approach</label>
+            <select id="en-energy-approach" onchange="calcEnteralTargets()">
+              <option value="general">General adult, weight-based: 25–30 kcal/kg/day</option>
+              <option value="elderly">≥65y polymorbid (ESPEN R9): ~27 kcal/kg/day TEE</option>
+              <option value="underweight">Severely underweight (ESPEN R10/R11): ~30 kcal/kg/day — ⚠ refeeding risk</option>
+            </select>
+          </div>
+          <div class="form-field"><label>kcal/kg actual body weight/day</label><input type="number" id="en-kcal-per-kg" value="27" step="0.5" oninput="calcEnteralTargets()"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="form-field"><label>Protein g/kg body weight/day</label><input type="number" id="en-protein-per-kg" value="1.3" step="0.1" oninput="calcEnteralTargets()"></div>
+          <div class="form-field" style="display:flex;align-items:flex-end;padding-bottom:8px">
+            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="en-on-dialysis" onchange="calcEnteralTargets()" style="width:auto"> Currently on kidney replacement therapy (dialysis)</label>
+          </div>
+        </div>
+        <div id="en-targets-result" style="margin-top:10px"></div>
+
+        <div class="section-label">3 · ENTERAL FORMULA &amp; DELIVERY CALCULATOR</div>
+        <div class="alert warn" style="margin-bottom:10px">✏️ The kcal/mL and protein values below are generic starting points — replace them with the actual product used on your ward before relying on this for a real patient.</div>
+        <div class="form-grid three">
+          <div class="form-field">
+            <label>Formula type (generic preset)</label>
+            <select id="en-formula-preset" onchange="applyFormulaPreset()">
+              <option value="standard">Standard polymeric, 1.0 kcal/mL</option>
+              <option value="dense">Energy-dense polymeric, 1.5 kcal/mL</option>
+              <option value="highprotein">High-protein, 1.2 kcal/mL</option>
+              <option value="fiber">Fiber-enriched, 1.0 kcal/mL</option>
+              <option value="custom">Custom (edit fields directly)</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Formula kcal/mL</label><input type="number" id="en-formula-kcal-ml" value="1.0" step="0.05" oninput="calcEnteralFormula()"></div>
+          <div class="form-field"><label>Formula protein (g per 100mL)</label><input type="number" id="en-formula-protein-100ml" value="4.0" step="0.1" oninput="calcEnteralFormula()"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="form-field"><label>Continuous infusion duration (hours/day)</label><input type="number" id="en-infusion-hours" value="20" step="1" oninput="calcEnteralFormula()"></div>
+          <div class="form-field"><label>OR bolus feeds per day</label><input type="number" id="en-bolus-feeds" value="5" step="1" oninput="calcEnteralFormula()"></div>
+        </div>
+        <div id="en-formula-result" style="margin-top:10px"></div>
+
+        <div class="section-label">4 · INITIATION &amp; ROUTE — REFERENCE ONLY (your team decides)</div>
+        <div id="en-guidance"></div>
+
+        <div class="section-label">5 · HOME ENTERAL NUTRITION (HEN) — TRANSITION &amp; ONGOING CARE</div>
+        <div class="alert info"><span>ℹ️ Source: ESPEN guideline on home enteral nutrition, Clin Nutr 2020;39:5–22. This section covers the parts most relevant to dietitian-led care (access device timing, formula selection, monitoring, termination) — device placement/site-care technique stays with the medical/nursing team.</span></div>
+
+        <div class="form-grid two" style="margin-bottom:10px">
+          <div class="form-field">
+            <label>Expected duration of enteral feeding</label>
+            <select id="hen-duration" onchange="calcHenAccessDevice()">
+              <option value="short">Short-term (up to 4–6 weeks)</option>
+              <option value="long">Long-term (more than 4–6 weeks)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Patient's main GI/metabolic situation</label>
+            <select id="hen-situation" onchange="calcHenFormulaSelection()">
+              <option value="none">None of these / standard tolerance</option>
+              <option value="diarrhea">Diarrhea</option>
+              <option value="constipation">Constipation</option>
+              <option value="diabetes">Diabetes</option>
+              <option value="diarrhea_diabetes">Diarrhea + Diabetes</option>
+            </select>
+          </div>
+        </div>
+        <div id="hen-access-result" style="margin-bottom:10px"></div>
+        <div id="hen-formula-result" style="margin-bottom:10px"></div>
+        <div id="hen-reference"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ENGINE -->
   <div class="page" id="page-engine">
@@ -965,69 +1062,7 @@ tr:hover td { background: var(--bg-hover); }
       <div class="card-body" id="equivalents-body"></div>
     </div>
   </div>
-  <!-- FOOD DATABASE -->
-  <div class="page" id="page-fooddb">
-    <div class="card">
-      <div class="card-header"><span class="card-title">🔎 Food Database — Open Food Facts</span></div>
-      <div class="card-body">
-        <div class="alert info">ℹ️ Search uses the free Open Food Facts API. Values are imported from public product labels and should be reviewed clinically before use.</div>
-        <div class="form-grid two">
-          <div class="form-field"><label>Food search</label><input type="text" id="food-search" placeholder="e.g. oats, yogurt, halloumi" onkeydown="if(event.key==='Enter') searchFoodDatabase()"></div>
-          <div class="form-field" style="display:flex;align-items:flex-end"><button class="btn primary" onclick="searchFoodDatabase()">Search foods</button></div>
-        </div>
-        <div id="fooddb-status" class="field-note"></div>
-        <div id="fooddb-results"></div>
-      </div>
-    </div>
-  </div>
-  <!-- RECIPES -->
-  <div class="page" id="page-recipes">
-    <div class="card">
-      <div class="card-header"><span class="card-title">🍲 Recipes</span></div>
-      <div class="card-body">
-        <div class="alert info">ℹ️ Build custom recipes from manual ingredients or foods found in Open Food Facts. Nutrition is calculated from kcal/carbs/protein/fat per 100g.</div>
-        <div class="form-grid two">
-          <div class="form-field"><label>Recipe name</label><input type="text" id="recipe-name" placeholder="e.g. Chicken rice bowl" oninput="renderRecipeDraft()"></div>
-          <div class="form-field"><label>Servings</label><input type="number" id="recipe-servings" min="1" step="1" value="1" oninput="renderRecipeDraft()"></div>
-        </div>
-        <div class="section-label">Add ingredient manually</div>
-        <div class="form-grid six">
-          <div class="form-field"><label>Food</label><input type="text" id="ing-name" placeholder="Ingredient"></div>
-          <div class="form-field"><label>Grams used</label><input type="number" id="ing-grams" min="0" step="1" placeholder="g"></div>
-          <div class="form-field"><label>kcal / 100g</label><input type="number" id="ing-kcal" min="0" step="0.1"></div>
-          <div class="form-field"><label>Carb / 100g</label><input type="number" id="ing-carbs" min="0" step="0.1"></div>
-          <div class="form-field"><label>Protein / 100g</label><input type="number" id="ing-protein" min="0" step="0.1"></div>
-          <div class="form-field"><label>Fat / 100g</label><input type="number" id="ing-fat" min="0" step="0.1"></div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px">
-          <button class="btn primary" onclick="addManualIngredient()">+ Add ingredient</button>
-          <button class="btn" onclick="clearRecipeDraft()">Clear draft</button>
-        </div>
-        <div id="recipe-draft"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
-          <button class="btn primary" onclick="saveRecipe()">💾 Save recipe</button>
-          <button class="btn" onclick="loadRecipes()">↻ Refresh recipes</button>
-        </div>
-        <div class="section-label">Saved recipes</div>
-        <div id="recipes-list"></div>
-      </div>
-    </div>
-  </div>
-  <!-- ACCOUNT / SUBSCRIPTION -->
-  <div class="page" id="page-account">
-    <div class="card">
-      <div class="card-header"><span class="card-title">💳 Account / Subscription</span></div>
-      <div class="card-body">
-        <div class="form-grid two">
-          <div class="form-field"><label>Signed in as</label><input type="text" id="acct-email" readonly style="background:var(--bg-page);cursor:not-allowed"></div>
-          <div class="form-field"><label>Subscription status</label><input type="text" id="acct-subscription" readonly style="background:var(--bg-page);cursor:not-allowed"></div>
-        </div>
-        <div id="account-subscription-detail" class="subscription-status">Subscription status will appear here after sign in.</div>
-        <button class="btn primary" onclick="startStripeCheckout()">Subscribe / renew</button>
-        <button class="btn" onclick="openBillingPortal()">Manage billing</button>
-      </div>
-    </div>
-  </div>
+
   </div>
 </div>
 </div>
@@ -1040,7 +1075,6 @@ tr:hover td { background: var(--bg-hover); }
   <button class="bnav-item" onclick="nav('exchanges');setBnav(this)"><span>🔄</span><span>Exchanges</span></button>
   <button class="bnav-item" onclick="nav('oneday');setBnav(this)"><span>☀️</span><span>1-Day</span></button>
   <button class="bnav-item bnav-badge" onclick="nav('engine');setBnav(this)" id="bnav-engine"><span>⚙️</span><span>Engine</span></button>
-  <button class="bnav-item" onclick="nav('account');setBnav(this)"><span>💳</span><span>Account</span></button>
 </nav>
 <script>
 const S = {
@@ -1052,7 +1086,7 @@ const S = {
   exAuto:{starch:true,protein:true,fat:true},
   exMeta:null, lastDairyType:'Moderate-fat', lastMeatType:'Lean',
   bc:{bf:null,water:null,fatmass:null,muscle:null,metage:null,visceral:null},
-  tracking:[],intake:{},notes:{},labValues:{},foodResults:[],recipes:[],recipeDraft:[],mealLanguage:'GR',reportOptions:{oneDay:true,sevenDay:true},
+  tracking:[],intake:{},notes:{},labValues:{},reportOptions:{oneDay:true,sevenDay:true},
   mealSel:{breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO',snack1Extras:[],snack2Extras:[],sleepExtras:[]}
 };
 
@@ -1065,13 +1099,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
-const SUBSCRIPTION_REQUIRED = true;
-const STRIPE_CHECKOUT_FUNCTION = 'create-checkout-session';
-const STRIPE_PORTAL_FUNCTION = 'create-customer-portal-session';
-
 let currentUser = null;
 let authTab = 'signin';
-let subscriptionState = {status:'unknown', active:false, currentPeriodEnd:null};
 
 function setAuthTab(tab){
   authTab = tab;
@@ -1116,99 +1145,23 @@ function showAuthScreen(){
 function hideAuthScreen(){
   document.getElementById('auth-screen').classList.add('hidden');
 }
-function showSubscriptionScreen(message){
-  const el=document.getElementById('subscription-screen');
-  if(el) el.classList.remove('hidden');
-  if(message) setEl('subscription-message', message);
-}
-function hideSubscriptionScreen(){
-  const el=document.getElementById('subscription-screen');
-  if(el) el.classList.add('hidden');
-}
-function subscriptionIsActive(row){
-  if(!row) return false;
-  const status=(row.subscription_status || row.status || '').toLowerCase();
-  const periodEnd=row.current_period_end || row.current_period_end_at || null;
-  const dateOk=!periodEnd || new Date(periodEnd).getTime() > Date.now();
-  return ['active','trialing'].includes(status) && dateOk;
-}
-async function fetchSubscriptionStatus(){
-  if(!currentUser) return {status:'signed_out', active:false};
-  const {data, error} = await sb.from('profiles')
-    .select('subscription_status,current_period_end,stripe_customer_id')
-    .eq('id', currentUser.id)
-    .maybeSingle();
-  if(error) return {status:'unknown', active:false, error:error.message};
-  return {
-    status:(data&&data.subscription_status)||'inactive',
-    active:subscriptionIsActive(data),
-    currentPeriodEnd:data&&data.current_period_end,
-    stripeCustomerId:data&&data.stripe_customer_id,
-  };
-}
-async function refreshSubscriptionGate(){
-  if(!SUBSCRIPTION_REQUIRED){ subscriptionState={status:'disabled',active:true}; hideSubscriptionScreen(); updateAccountPage(); return; }
-  subscriptionState = await fetchSubscriptionStatus();
-  updateAccountPage();
-  if(subscriptionState.active){
-    hideSubscriptionScreen();
-  } else {
-    const msg = subscriptionState.error
-      ? `Could not verify subscription: ${subscriptionState.error}`
-      : 'Subscribe to unlock NutriFlow for your practice.';
-    showSubscriptionScreen(msg);
-  }
-}
-async function startStripeCheckout(){
-  if(!currentUser){ showAuthScreen(); return; }
-  setEl('subscription-message','Creating secure checkout…');
-  const {data, error} = await sb.functions.invoke(STRIPE_CHECKOUT_FUNCTION, {
-    body:{returnUrl:window.location.href}
-  });
-  if(error){ setEl('subscription-message','Checkout unavailable: '+error.message); return; }
-  if(data && data.url){ window.location.href=data.url; return; }
-  setEl('subscription-message','Checkout function did not return a URL.');
-}
-async function openBillingPortal(){
-  if(!currentUser){ showAuthScreen(); return; }
-  setEl('subscription-message','Opening billing portal…');
-  const {data, error} = await sb.functions.invoke(STRIPE_PORTAL_FUNCTION, {
-    body:{returnUrl:window.location.href}
-  });
-  if(error){ setEl('subscription-message','Billing portal unavailable: '+error.message); return; }
-  if(data && data.url){ window.location.href=data.url; return; }
-  setEl('subscription-message','Billing portal function did not return a URL.');
-}
-function updateAccountPage(){
-  const emailEl=document.getElementById('acct-email'); if(emailEl) emailEl.value=currentUser?currentUser.email:'';
-  const statusEl=document.getElementById('acct-subscription'); if(statusEl) statusEl.value=subscriptionState.status||'unknown';
-  const detail=document.getElementById('account-subscription-detail');
-  if(detail){
-    const until=subscriptionState.currentPeriodEnd ? ` Current period ends ${new Date(subscriptionState.currentPeriodEnd).toLocaleDateString('el-GR')}.` : '';
-    detail.innerHTML = subscriptionState.active
-      ? `<strong>Active subscription.</strong>${until}`
-      : `<strong>Subscription required.</strong> Use Checkout to activate this account.`;
-  }
-}
 
 let hadSession = false; // tracks whether a session existed before, to detect unexpected sign-outs
 let recoveringSession = false; // true if we just had an unexpected sign-out and need to restore on next sign-in
-sb.auth.onAuthStateChange(async (event, session)=>{
+sb.auth.onAuthStateChange((event, session)=>{
   currentUser = session ? session.user : null;
   if(currentUser){
     hadSession = true;
     hideAuthScreen();
     document.getElementById('user-chip').style.display='flex';
     setEl('user-email', currentUser.email);
-    await refreshSubscriptionGate();
-    if(subscriptionState.active && document.getElementById('page-clients')?.classList.contains('active')) renderClientList();
-    if(subscriptionState.active && recoveringSession){
+    if(document.getElementById('page-clients')?.classList.contains('active')) renderClientList();
+    if(recoveringSession){
       // Restore whatever was being worked on before the unexpected sign-out
       tryRestoreAutosave();
       recoveringSession=false;
     }
   } else {
-    hideSubscriptionScreen();
     if(hadSession){
       // Unexpected sign-out mid-session (e.g. token refresh failure) —
       // save current work locally before showing the login screen again,
@@ -1294,44 +1247,6 @@ const MEALS = {
   DIN_HALLOUMI_SALAD: (ex,p) => 'Χαλούμι ψητό + σαλάτα μεγάλη (3 φλ.) + ψωμί ολικής',
   DIN_BEAN_PASTA:     (ex,p) => 'Φασόλια + ζυμαρικά' + mealSuffix(ex,p,'σαλάτα', n=>`${n} μερίδ${n>1?'ες':'α'} φασόλια (½ φλ. μαγειρεμένα ανά μερίδα)`, 'ζυμαρικά'),
 };
-
-const MEALS_EN = {
-  BRK_TOAST:       (ex,p) => `Toast (2 slices wholegrain bread) - 1 slice light cheese + cucumber / cherry tomatoes`,
-  BRK_TOAST_TURKEY:(ex,p) => `Toast (2 slices wholegrain bread) - 1 slice light cheese + 1 slice turkey + cucumber`,
-  BRK_EGGS:        (ex,p) => `2 boiled/poached eggs + 1 slice wholegrain bread + cucumber / tomato`,
-  BRK_EGGS_TOAST:  (ex,p) => `Toast (2 slices wholegrain bread) - 1 egg + 1 slice light cheese`,
-  BRK_CEREAL:      (ex,p) => `Oats (5 tbsp / ~40g) - 1 cup 1.5% milk`,
-  BRK_OATS_VEGAN:  (ex,p) => `Oats (5 tbsp / ~40g) - 1 cup fortified plant milk (almond/soy)`,
-  LUN_CHICKEN_RICE:   (ex,p) => 'Chicken + rice' + mealSuffixEn(ex,p,'salad',null,'rice'),
-  LUN_FISH_POTATO:    (ex,p) => 'Fish + potato' + mealSuffixEn(ex,p,'salad',null,'potato','fish',true),
-  LUN_LOUVI_TUNA:     (ex,p) => 'Black-eyed beans + tuna' + mealSuffixEn(ex,p,'salad / greens',null,'bread','tuna',true),
-  LUN_FASOLAKIA_PORK: (ex,p) => 'Green beans + pork' + mealSuffixEn(ex,p,'green beans + salad',null,'potato','pork'),
-  LUN_TUNA_POTATO:    (ex,p) => 'Tuna + potato' + mealSuffixEn(ex,p,'salad',null,'potato','tuna',true),
-  LUN_PASTA_MINCE:    (ex,p) => 'Pasta + mince' + mealSuffixEn(ex,p,'salad',null,'pasta','mince'),
-  LUN_BIFTEKI_BULGUR: (ex,p) => 'Bifteki + bulgur' + mealSuffixEn(ex,p,'salad',null,'bulgur','bifteki'),
-  DIN_CHICKEN_RICE:   (ex,p) => 'Chicken + rice' + mealSuffixEn(ex,p,'salad',null,'rice'),
-  DIN_FISH_POTATO:    (ex,p) => 'Fish + potato' + mealSuffixEn(ex,p,'salad',null,'potato','fish',true),
-  DIN_OMELETTE:       (ex,p) => 'Omelette (2 eggs) + 1 slice bread - boiled vegetables (2 cups)',
-  DIN_TUNA_POTATO:    (ex,p) => 'Tuna + potato' + mealSuffixEn(ex,p,'salad',null,'potato','tuna',true),
-  DIN_PASTA_MINCE:    (ex,p) => 'Pasta + mince' + mealSuffixEn(ex,p,'salad',null,'pasta','mince'),
-  DIN_SOUVLAKI_PITA:  (ex,p) => 'Chicken souvlaki + Cypriot pita - salad (2 cups)',
-  DIN_BIFTEKI_BULGUR: (ex,p) => 'Bifteki + bulgur' + mealSuffixEn(ex,p,'salad',null,'bulgur','bifteki'),
-  LUN_LENTILS_RICE:   (ex,p) => 'Lentil stew + rice' + mealSuffixEn(ex,p,'salad', n=>`${n} lentil serving${n>1?'s':''} (1/2 cup cooked per serving)`, 'rice'),
-  LUN_CHICKPEA_STEW:  (ex,p) => 'Chickpea stew + wholegrain bread - salad (2 cups)',
-  LUN_TOFU_RICE:      (ex,p) => 'Tofu stir-fry with vegetables + rice' + mealSuffixEn(ex,p,'salad', n=>`${n*30}g firm tofu`, 'rice'),
-  LUN_HALLOUMI_PASTA: (ex,p) => 'Grilled halloumi + pasta' + mealSuffixEn(ex,p,'salad', n=>`${n*30}g grilled halloumi`, 'pasta'),
-  LUN_BEAN_SALAD:     (ex,p) => 'Bean salad + olive oil + wholegrain bread - salad (2 cups)',
-  DIN_LENTILS_RICE:   (ex,p) => 'Lentil stew + rice' + mealSuffixEn(ex,p,'salad', n=>`${n} lentil serving${n>1?'s':''} (1/2 cup cooked per serving)`, 'rice'),
-  DIN_TOFU_STIRFRY:   (ex,p) => 'Tofu stir-fry with vegetables + rice' + mealSuffixEn(ex,p,'salad', n=>`${n*30}g firm tofu`, 'rice'),
-  DIN_CHICKPEA_STEW:  (ex,p) => 'Chickpea stew + wholegrain bread - salad (2 cups)',
-  DIN_HALLOUMI_SALAD: (ex,p) => 'Grilled halloumi + large salad (3 cups) + wholegrain bread',
-  DIN_BEAN_PASTA:     (ex,p) => 'Beans + pasta' + mealSuffixEn(ex,p,'salad', n=>`${n} bean serving${n>1?'s':''} (1/2 cup cooked per serving)`, 'pasta'),
-};
-
-function mealText(key, portions, lang){
-  const map = (lang||S.mealLanguage)==='EN' ? MEALS_EN : MEALS;
-  return map[key] ? map[key](S.ex, portions) : '';
-}
 
 // ── MEAL EXCHANGE COSTS ──
 // Each meal template's exchange composition at BASE portions (before scaling
@@ -1513,34 +1428,6 @@ function mealSuffix(ex, p, veg, proteinSource, carbName, proteinLabel, isFishPro
   const vegForThisMeal = (p && p.veg!==undefined) ? p.veg : (ex.veg||0);
   const vegCups = vegForThisMeal>0 ? `(${vegForThisMeal} φλ.)` : '';
   return portionTxt + ' – ' + veg + ' ' + vegCups;
-}
-
-function mealSuffixEn(ex, p, veg, proteinSource, carbName, proteinLabel, isFishProtein) {
-  p = p || {prot:0, starch:0, fat:0, veg:undefined};
-  const parts = [];
-  if (p.prot > 0) {
-    if(proteinSource){
-      parts.push(proteinSource(p.prot));
-    } else {
-      const proPerEx = (S.exMeta && S.exMeta.protein.pro) || 7;
-      const gramsPerEx = Math.round(30 * (proPerEx/7));
-      const totalGrams = p.prot * gramsPerEx;
-      const fishGrams = Math.round(totalGrams*1.15/10)*10;
-      if(isFishProtein){
-        parts.push(`${fishGrams}g cooked ${proteinLabel||'fish'}`);
-      } else if(proteinLabel){
-        parts.push(`${totalGrams}g cooked ${proteinLabel}`);
-      } else {
-        parts.push(`${totalGrams}g cooked meat/chicken (or ${fishGrams}g fish)`);
-      }
-    }
-  }
-  if (p.starch > 0) parts.push(`${formatCups(p.starch)} cup ${carbName||'rice'}`);
-  if (p.fat > 0)    parts.push(`${p.fat} tsp olive oil`);
-  const portionTxt = parts.length ? ' (' + parts.join(' + ') + ')' : '';
-  const vegForThisMeal = (p && p.veg!==undefined) ? p.veg : (ex.veg||0);
-  const vegCups = vegForThisMeal>0 ? `(${vegForThisMeal} cup)` : '';
-  return portionTxt + ' - ' + veg + ' ' + vegCups;
 }
 
 const WEEK_PLANS = [
@@ -1859,7 +1746,7 @@ function getSnackExtras(elId){
 // for this slot. The fruit/dairy base is ALWAYS included when the
 // distribution assigns a non-zero count to this slot — completely
 // independent of which extras are ticked, so it can never be silently lost.
-function buildSlotSnack(slot, extras, lang='GR'){
+function buildSlotSnack(slot, extras){
   const fruitDist=getFruitDistribution();
   const dairyDist=getDairyDistribution();
   const fruitCount=fruitDist[slot]||0;
@@ -1875,39 +1762,22 @@ function buildSlotSnack(slot, extras, lang='GR'){
   if(fruitCount>0){
     exch.fruit += fruitCount;
     parts.push(useDriedFruit
-      ? (lang==='EN' ? `${fruitCount>1?fruitCount+'x ':''}2 tbsp dried fruit` : `${fruitCount>1?fruitCount+'x ':''}2 κ.σ. αποξηραμένα φρούτα`)
-      : (lang==='EN' ? `${fruitCount} fruit${fruitCount>1?'s':''} (see Equivalents Guide)` : `${fruitCount} φρούτ${fruitCount>1?'α':'ο'} (βλ. Οδηγό Ισοδυναμιών)`));
+      ? `${fruitCount>1?fruitCount+'x ':''}2 κ.σ. αποξηραμένα φρούτα`
+      : `${fruitCount} φρούτ${fruitCount>1?'α':'ο'} (βλ. Οδηγό Ισοδυναμιών)`);
   }
   if(dairyCount>0){
     exch.dairy += dairyCount;
     if(useYogurt){
-      parts.push(lang==='EN' ? `${dairyCount===1?'1':dairyCount} yogurt 2% (~${Math.round(170*dairyCount)}g)` : `${dairyCount===1?'1':dairyCount} γιαούρτι 2% (~${Math.round(170*dairyCount)}g)`);
+      parts.push(`${dairyCount===1?'1':dairyCount} γιαούρτι 2% (~${Math.round(170*dairyCount)}g)`);
     } else {
       const cup=dairyCount===0.5?'½ φλ.':dairyCount===1?'1 φλ.':dairyCount===1.5?'1½ φλ.':`${dairyCount} φλ.`;
-      const cupEn=dairyCount===0.5?'1/2 cup':dairyCount===1?'1 cup':dairyCount===1.5?'1 1/2 cups':`${dairyCount} cups`;
-      parts.push(lang==='EN' ? `${cupEn} 1.5% milk` : `${cup} γάλα 1,5%`);
+      parts.push(`${cup} γάλα 1,5%`);
     }
   }
-  if(addNuts){ exch.fat += 1; parts.push(lang==='EN' ? '6 almonds or 4 walnuts' : '6 αμύγδαλα ή 4 καρύδια'); }
-  if(addCoffee){ parts.push(lang==='EN' ? 'Coffee (without sugar)' : 'Καφές (χωρίς ζάχαρη)'); }
+  if(addNuts){ exch.fat += 1; parts.push('6 αμύγδαλα ή 4 καρύδια'); }
+  if(addCoffee){ parts.push('Καφές (χωρίς ζάχαρη)'); }
 
   return {exch, text: parts.length ? parts.join(' + ') : '—'};
-}
-
-function setMealLanguage(lang){
-  S.mealLanguage = lang==='EN' ? 'EN' : 'GR';
-  updateMealLanguageButtons();
-  if(document.getElementById('page-oneday')?.classList.contains('active')) buildOneDayPlan();
-  if(document.getElementById('page-sevenday')?.classList.contains('active')) buildSevenDay();
-}
-function updateMealLanguageButtons(){
-  const isEn=S.mealLanguage==='EN';
-  ['1day','7day'].forEach(scope=>{
-    const gr=document.getElementById(`meal-lang-gr-${scope}`);
-    const en=document.getElementById(`meal-lang-en-${scope}`);
-    if(gr){ gr.classList.toggle('primary', !isEn); }
-    if(en){ en.classList.toggle('primary', isEn); }
-  });
 }
 
 // Base default macro values per exchange (g CHO / g PRO / g FAT per exchange).
@@ -2013,32 +1883,13 @@ const COND_GUIDANCE = {
   PCOS:        {gr:'PCOS', main:'Δεν υπάρχει αποδεδειγμένα "καλύτερο" πρότυπο — η DASH διατροφή με ήπιο θερμιδικό έλλειμμα έχει τα πιο συνεπή ευρήματα για απώλεια βάρους και γλυκαιμικό έλεγχο σε γυναίκες με PCOS.', prefer:'Λαχανικά, φρούτα, δημητριακά ολικής άλεσης, χαμηλά λιπαρά γαλακτοκομικά, άπαχη πρωτεΐνη (DASH-τύπου), τακτική σωματική δραστηριότητα.', avoid:'Υπερβολή σε επεξεργασμένους υδατάνθρακες/ζάχαρη. Εξατομίκευση σημαντική — δεν χρειάζεται αυστηρή αποφυγή υδατανθράκων για όλες.'},
   GERD:        {gr:'Γαστροοισοφαγική παλινδρόμηση', main:'Η κλασική αποφυγή "trigger" τροφών (ντομάτα, εσπεριδοειδή, τηγανητά) δίνει μόνο μερική ανακούφιση σε πολλούς ασθενείς — η εξατομίκευση είναι σημαντική. Σε επίμονα συμπτώματα παρά τη φαρμακευτική αγωγή, μια προσέγγιση τύπου low-FODMAP μπορεί να βοηθήσει μειώνοντας τη διάταση του εντέρου.', prefer:'Μικρά, συχνά γεύματα· αποφυγή φαγητού 2-3 ώρες πριν τον ύπνο· διατήρηση φυσιολογικού βάρους.', avoid:'Λιπαρά/τηγανητά, καφεΐνη, αλκοόλ, ανθρακούχα ποτά, μέντα — αλλά εξατομικευμένα ανά ασθενή, όχι γενικευμένη λίστα.'},
   IBS:         {gr:'Σύνδρομο ευερέθιστου εντέρου', main:'Low-FODMAP διατροφή (Monash) — ισχυρότερη τεκμηρίωση από όλες τις διατροφικές παρεμβάσεις για IBS, αλλά εφαρμόζεται ως 2ης γραμμής, σε φάσεις (περιορισμός → επανεισαγωγή) με καθοδήγηση διαιτολόγου για να αποφευχθούν ελλείψεις.', prefer:'Φάση περιορισμού: ρύζι, κινόα, βρώμη, καρότο, αγγούρι, ώριμη μπανάνα, εσπεριδοειδή με μέτρο, κοτόπουλο, αυγό, lactose-free γαλακτοκομικά.', avoid:'Σκόρδο, κρεμμύδι, σιτάρι/σίκαλη σε ποσότητα, όσπρια, μήλο/αχλάδι/καρπούζι, γαλακτοκομικά με λακτόζη, γλυκαντικά πολυόλης (sorbitol/mannitol) — στη φάση περιορισμού μόνο.'},
-  Obesity:     {gr:'Weight Management', main:'Ήπιο, βιώσιμο θερμιδικό έλλειμμα με έμφαση σε φυτικής προέλευσης, ελάχιστα επεξεργασμένα πρότυπα (Μεσογειακή/DASH/whole-food) — με τη μεγαλύτερη τεκμηρίωση για μακροπρόθεσμη απώλεια βάρους και καρδιαγγειακό όφελος.', prefer:'Λαχανικά, όσπρια, δημητριακά ολικής άλεσης, άπαχη πρωτεΐνη για κορεσμό, νερό αντί ζαχαρούχων ποτών.', avoid:'Ultra-processed τρόφιμα, ζαχαρούχα ποτά, fast food, υπερβολικό αλκοόλ.'},
+  Obesity:     {gr:'Παχυσαρκία', main:'Ήπιο, βιώσιμο θερμιδικό έλλειμμα με έμφαση σε φυτικής προέλευσης, ελάχιστα επεξεργασμένα πρότυπα (Μεσογειακή/DASH/whole-food) — με τη μεγαλύτερη τεκμηρίωση για μακροπρόθεσμη απώλεια βάρους και καρδιαγγειακό όφελος.', prefer:'Λαχανικά, όσπρια, δημητριακά ολικής άλεσης, άπαχη πρωτεΐνη για κορεσμό, νερό αντί ζαχαρούχων ποτών.', avoid:'Ultra-processed τρόφιμα, ζαχαρούχα ποτά, fast food, υπερβολικό αλκοόλ.'},
   Hemodialysis:{gr:'Αιμοκάθαρση', main:'Νάτριο <2.3 g/ημέρα και έλεγχος υγρών παραμένουν βασικά. Πρωτεΐνη συνήθως αυξημένη (λόγω απωλειών στη διαδικασία αιμοκάθαρσης) — όχι περιορισμένη όπως στην CKD πριν την αιμοκάθαρση. Κάλιο/φώσφορος εξατομικευμένα βάσει τακτικού αιματολογικού ελέγχου.', prefer:'Πρωτεΐνη υψηλής βιολογικής αξίας (κρέας, ψάρι, αυγό, πουλερικά), ρύζι, ζυμαρικά· βράσιμο λαχανικών/κρέατος μειώνει την περιεκτικότητα σε φώσφορο/κάλιο.', avoid:'Τρόφιμα με πρόσθετα φωσφόρου (επεξεργασμένα, fast food, cola), περίσσεια υγρών. Περιορισμός υψηλού-Κ τροφίμων μόνο όταν υποδεικνύεται από τα τρέχοντα αιματολογικά.'},
   Thyroid:     {gr:'Υποθυρεοειδισμός / Θυρεοειδίτιδα Hashimoto', main:'Καμία δίαιτα δεν θεραπεύει τη Hashimoto — η λεβοθυροξίνη (αν συνταγογραφείται) παραμένει η βασική θεραπεία, να λαμβάνεται νηστικός/η, με 30-60 λεπτά απόσταση από ασβέστιο, σίδηρο και γαλακτοκομικά που μειώνουν την απορρόφησή της. Επαρκής πρόσληψη σεληνίου, ψευδαργύρου, σιδήρου, βιταμίνης D και ιωδίου σε φυσιολογικά (όχι υπερβολικά) επίπεδα φαίνεται να υποστηρίζει τη λειτουργία του θυρεοειδή.', prefer:'Μεσογειακή διατροφή πλούσια σε αντιοξειδωτικά (λαχανικά, φρούτα, ελαιόλαδο)· πηγές σεληνίου (καρύδια Βραζιλίας με μέτρο, ψάρι, αυγά)· πηγές ψευδαργύρου/σιδήρου (όσπρια, άπαχο κρέας)· γαλακτοκομικά/ιχθύες για ιωδίου με μέτρο.', avoid:'Υπερβολική πρόσληψη ιωδίου (π.χ. φύκια/kelp συμπληρώματα) χωρίς ιατρική καθοδήγηση — μπορεί να επιδεινώσει αυτοάνοση θυρεοειδίτιδα. Σε άτομα με ταυτόχρονη δυσανεξία λακτόζης/γλουτένης, εξατομίκευση μετά από έλεγχο — όχι αυτόματος αποκλεισμός χωρίς λόγο.'},
   Celiac:      {gr:'Κοιλιοκάκη (Celiac Disease)', main:'Αυστηρή, δια βίου αποφυγή γλουτένης (σιτάρι, κριθάρι, σίκαλη και προϊόντα τους) — η μόνη αποδεδειγμένη θεραπεία. Προσοχή σε διασταυρούμενη επιμόλυνση κατά το μαγείρεμα/σερβίρισμα.', prefer:'Φυσικά χωρίς γλουτένη τρόφιμα: ρύζι, καλαμπόκι, κινόα, πατάτα, όσπρια, φρούτα, λαχανικά, κρέας, ψάρι, αυγά, γαλακτοκομικά (αν δεν συνυπάρχει δυσανεξία λακτόζης). Πιστοποιημένα gluten-free προϊόντα όπου χρειάζεται.', avoid:'Σιτάρι, κριθάρι, σίκαλη, βρώμη (εκτός αν είναι πιστοποιημένη gluten-free), και κρυφές πηγές γλουτένης σε σάλτσες/αλλαντικά/έτοιμα φαγητά — έλεγχος ετικέτας πάντα.'},
   Thalassemia: {gr:'Μεσογειακή Αναιμία (Thalassemia)', main:'Πολύ συχνή στην Κύπρο. Σε ασθενείς με τακτικές μεταγγίσεις/υπερφόρτωση σιδήρου, η διατροφή πρέπει να περιορίζει την επιπλέον πρόσληψη σιδήρου — αντίθετα από τη συνήθη σύσταση για αναιμία. Συνεργασία με αιματολόγο απαραίτητη.', prefer:'Τσάι ή καφές με τα γεύματα (η ταννίνη μειώνει την απορρόφηση σιδήρου από φυτικές πηγές)· ασβέστιο (γαλακτοκομικά) μαζί με γεύματα μειώνει επίσης την απορρόφηση σιδήρου.', avoid:'Συμπληρώματα σιδήρου ή βιταμίνης C σε υψηλές δόσεις μαζί με γεύματα (η βιτ. C αυξάνει την απορρόφηση σιδήρου) σε ασθενείς με υπερφόρτωση σιδήρου, εκτός αν υποδεικνύεται διαφορετικά από τον αιματολόγο. Κόκκινο κρέας σε μεγάλες ποσότητες.'},
   Pregnancy:   {gr:'Εγκυμοσύνη (Pregnancy)', main:'Αυξημένες ανάγκες σε φολικό οξέ (600 mcg/ημέρα), σίδηρο (27mg/ημέρα), ασβέστιο (1000mg/ημέρα), ιώδιο (220mcg/ημέρα), χολίνη και ωμέγα-3 (DHA). Ενεργειακές ανάγκες: +0 kcal στο 1ο τρίμηνο, +340 kcal στο 2ο, +450 kcal στο 3ο τρίμηνο (πάνω από τις βασικές ανάγκες) — ΌΧΙ θερμιδικός περιορισμός για απώλεια βάρους κατά την κύηση, ανεξαρτήτως αρχικού ΔΜΣ, εκτός αν υποδεικνύεται από γιατρό. 1ο τρίμηνο: μικρά συχνά γεύματα για ναυτία. Λήψη προγεννητικής πολυβιταμίνης συνιστάται από ACOG/ιατρό.', prefer:'Πλήρως μαγειρεμένο κρέας/ψάρι/αυγά, παστεριωμένα γαλακτοκομικά, ψάρια χαμηλά σε υδράργυρο (σολομός, σαρδέλα, γαύρος) για DHA, πράσινα φυλλώδη λαχανικά/όσπρια/εσπεριδοειδή για φολικό, εμπλουτισμένα δημητριακά.', avoid:'Αλκοόλ (καμία ασφαλής ποσότητα), ωμό/μισοψημένο κρέας-ψάρι-αυγά, μη παστεριωμένα γαλακτοκομικά και μαλακά τυριά (φέτα, μπρι, μπλε τυρί εκτός αν αναγράφεται παστεριωμένο), αλλαντικά (εκτός αν αναθερμαίνονται καλά), ψάρια υψηλά σε υδράργυρο (ξιφίας, καρχαρίας, σκουμπρί βασιλικό), υπερβολική καφεΐνη (>200mg/ημέρα ≈ 1 φλιτζάνι καφέ), ωμές φύτρες.'},
-  FoodIntolerance:{gr:'Food Intolerances / Allergies', main:'Εξατομίκευση με βάση επιβεβαιωμένη αλλεργία/δυσανεξία και συμπτώματα. Αποφυγή μόνο των τροφίμων που χρειάζεται, ώστε να μην περιορίζεται άσκοπα η ποικιλία.', prefer:'Ασφαλείς εναλλακτικές τροφίμων, προσεκτική ανάγνωση ετικετών, έλεγχος για διασταυρούμενη επιμόλυνση όπου υπάρχει αλλεργία.', avoid:'Αυθαίρετους αποκλεισμούς ολόκληρων ομάδων τροφίμων χωρίς κλινικό λόγο ή διαγνωστική τεκμηρίωση.'},
-  Menopause:   {gr:'Menopause', main:'Έμφαση σε καρδιομεταβολική υγεία, διαχείριση βάρους, μυϊκή μάζα και οστική υγεία. Οι ανάγκες εξατομικεύονται ανάλογα με συμπτώματα, λιπίδια, γλυκόζη και επίπεδο δραστηριότητας.', prefer:'Πρωτεΐνη κατανεμημένη μέσα στην ημέρα, ασβέστιο/βιταμίνη D από τροφή ή ιατρικά ελεγμένη συμπλήρωση, λαχανικά, όσπρια, ψάρια, ελαιόλαδο και άσκηση αντίστασης.', avoid:'Υπερβολικό αλκοόλ, πολύ επεξεργασμένα τρόφιμα και πολύ χαμηλές θερμίδες που δυσκολεύουν τη διατήρηση μυϊκής μάζας.'},
-  Sports:      {gr:'Sports Nutrition / Performance', main:'Στόχος είναι επαρκής ενέργεια, σωστή κατανομή υδατανθράκων γύρω από την προπόνηση, επαρκής πρωτεΐνη για αποκατάσταση και καλή ενυδάτωση.', prefer:'Υδατάνθρακες ανάλογα με τον όγκο προπόνησης, πρωτεΐνη σε 3–5 γεύματα, γεύμα/σνακ αποκατάστασης και ηλεκτρολύτες όταν υπάρχει έντονη εφίδρωση.', avoid:'Ανεπαρκή πρόσληψη ενέργειας, ακραίους περιορισμούς υδατανθράκων σε υψηλή προπόνηση και μη ελεγμένα συμπληρώματα.'},
 };
-
-const CONDITION_LABELS = {
-  General:'Healthy Eating',
-  Obesity:'Weight Management',
-  Diabetes:'Diabetes Type 2',
-  Dyslipidemia:'High Cholesterol (Dyslipidemia)',
-  Hypertension:'Hypertension',
-  PCOS:'PCOS',
-  Thyroid:"Hypothyroidism / Hashimoto's",
-  IBS:'IBS / Digestive Issues',
-  FoodIntolerance:'Food Intolerances / Allergies',
-  Pregnancy:'Pregnancy',
-  Menopause:'Menopause',
-  Sports:'Sports Nutrition / Performance',
-};
-function conditionLabel(c){ return CONDITION_LABELS[c] || (COND_GUIDANCE[c]&&COND_GUIDANCE[c].gr) || c || 'Healthy Eating'; }
 
 // Evidence sources referenced in the guidance above (for clinician reference / transparency)
 const GUIDANCE_SOURCES = 'Πηγές: ADA Standards of Care in Diabetes 2026 · KDIGO 2024 CKD Guideline · AHA/DASH · Monash University Low-FODMAP Diet · Nutrition Reviews 2025 (Hashimoto\'s Thyroiditis) · ACOG / NIH ODS / Dietary Guidelines for Americans 2020-2025 (Pregnancy). Οι πληροφορίες είναι γενικές κατευθυντήριες γραμμές — απαιτείται πάντα κλινική κρίση και εξατομίκευση.';
@@ -2064,18 +1915,8 @@ const PREGNANCY_TRIMESTER_NOTES = {
   '3': 'Γ\' Τρίμηνο: +450 kcal/ημέρα. Αυξημένες ανάγκες σε πρωτεΐνη, σίδηρο, DHA (ανάπτυξη εγκεφάλου). Μικρότερα γεύματα μπορεί να βοηθήσουν λόγω μειωμένου χώρου στομάχου.',
 };
 
-let lastConditionRadio = null;
-function onConditionRadioClick(radio){
-  if(lastConditionRadio === radio && radio.checked){
-    radio.checked = false;
-    lastConditionRadio = null;
-  } else {
-    lastConditionRadio = radio.checked ? radio : null;
-  }
-  onPregnancyToggle();
-}
 function onPregnancyToggle(){
-  const checked = !!document.querySelector('#p-conditions input[value="Pregnancy"]:checked');
+  const checked = document.querySelector('#p-conditions input[value="Pregnancy"]').checked;
   document.getElementById('pregnancy-trimester-field').style.display = checked ? 'block' : 'none';
   calcAll();
 }
@@ -2096,9 +1937,6 @@ const COND_MACROS = {
   Celiac:      {c:45,p:20,f:35},
   Thalassemia: {c:45,p:20,f:35},
   Pregnancy:   {c:45,p:20,f:35},
-  FoodIntolerance:{c:45,p:20,f:35},
-  Menopause:   {c:40,p:25,f:35},
-  Sports:      {c:50,p:25,f:25},
 };
 
 // ── CONDITION-SPECIFIC CAP OVERRIDES ──
@@ -2225,14 +2063,12 @@ const PAGE_INFO = {
   exchanges:{title:'Exchange System',sub:'Σύστημα Ισοδυνάμων · Auto-calculated from macro targets'},
   oneday:{title:'1-Day Auto Plan',sub:'Exchange-based daily meal plan with meal dropdowns'},
   sevenday:{title:'7-Day Meal Plan',sub:'Full weekly schedule — all 7 plan variants'},
-  fooddb:{title:'Food Database',sub:'Open Food Facts search · Macros per 100g'},
-  recipes:{title:'Recipes',sub:'Custom recipes · Auto-calculated nutrition'},
   report:{title:'Client Report (Print)',sub:'PRINT — Κλινική Αναφορά Διατροφής'},
   tracking:{title:'Progress Tracking',sub:'Body composition history · Visit log'},
   engine:{title:'Engine Control',sub:'Live safety & integrity checks — review before printing'},
-  account:{title:'Account / Subscription',sub:'Billing status · Stripe subscription'},
   labs:{title:'Blood Analysis',sub:'Lab values with reference ranges · Suggested vitamins & minerals'},
   equivalents:{title:'Equivalents Guide',sub:'Printable food exchange list for clients — EN / GR'},
+  enteral:{title:'Enteral Nutrition',sub:'Εντερική Σίτιση — Screening · Targets · Formula calculator (ESPEN 2024)'},
 };
 
 function nav(id) {
@@ -2248,7 +2084,6 @@ function nav(id) {
   if(id==='clients') renderClientList();
   if(id==='equivalents') buildEquivalents();
   if(id==='labs') renderLabsTable();
-  if(id==='recipes') { renderRecipeDraft(); loadRecipes(); }
   if(id==='profile') calcBodyComp();
   if(id==='exchanges') renderExchanges();
   // Always sync exchange inputs → S.ex before building meal plans
@@ -2263,12 +2098,13 @@ function nav(id) {
   if(id==='report') buildReport();
   if(id==='engine') renderEngine();
   if(id==='tracking') renderTracking();
+  if(id==='enteral'){ renderEAT10Items(); calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula(); renderEnteralGuidance(); calcHenAccessDevice(); calcHenFormulaSelection(); renderHenReference(); }
 }
 
 function calcAll() {
   const age=parseFloat(v('p-age'))||null, sex=v('p-sex'), h=parseFloat(v('p-height'))||null;
   const w=parseFloat(v('p-weight'))||null, act=parseFloat(v('p-activity'))||1.55;
-  const conditions=Array.from(document.querySelectorAll('#p-conditions input[name="p-condition"]:checked')).map(cb=>cb.value);
+  const conditions=Array.from(document.querySelectorAll('#p-conditions input[type=checkbox]:checked')).map(cb=>cb.value);
   const goal=v('p-goal'), meatType=v('p-meat'), dairyType=v('p-dairy');
   const name=v('p-name');
 
@@ -2284,7 +2120,6 @@ function calcAll() {
   // it's treated as a manual override and is never silently replaced again
   // — including when they change Goal afterwards.
   const isPregnant = conditions.includes('Pregnancy');
-  const triField=document.getElementById('pregnancy-trimester-field'); if(triField) triField.style.display = isPregnant ? 'block' : 'none';
   let autoAdj=0;
   if(!isPregnant){
     if(goal==='Weight Loss') autoAdj=-500;
@@ -2664,30 +2499,28 @@ function saveBodyComp(){
 }
 
 function buildOneDayPlan(){
-  updateMealLanguageButtons();
-  const lang=S.mealLanguage||'GR';
   const brk=v('s-breakfast')||'BRK_TOAST', lun=v('s-lunch')||'LUN_CHICKEN_RICE', din=v('s-dinner')||'DIN_FISH_POTATO';
   const snk1Extras=getSnackExtras('s-snack1'), snk2Extras=getSnackExtras('s-snack2'), sleepExtras=getSnackExtras('s-sleep');
   S.mealSel={breakfast:brk,lunch:lun,dinner:din,snack1Extras:snk1Extras,snack2Extras:snk2Extras,sleepExtras:sleepExtras};
   const ex=S.ex;
   const portions=getMealPortions();
   const day=calcDayTotals();
-  const snk1Built=buildSlotSnack('snk1', snk1Extras, lang);
-  const snk2Built=buildSlotSnack('snk2', snk2Extras, lang);
-  const sleepBuilt=buildSlotSnack('sleep', sleepExtras, lang);
+  const snk1Built=buildSlotSnack('snk1', snk1Extras);
+  const snk2Built=buildSlotSnack('snk2', snk2Extras);
+  const sleepBuilt=buildSlotSnack('sleep', sleepExtras);
   const meals=[
-    {time:lang==='EN'?'Breakfast':'Πρωινό',      en:'Breakfast',     text:mealText(brk,null,lang),              kcal:day.brkKcal},
-    {time:lang==='EN'?'Snack 1':'Σνακ 1',        en:'Snack 1',       text:snk1Built.text,                       kcal:day.snk1Kcal},
-    {time:lang==='EN'?'Lunch':'Μεσημεριανό',     en:'Lunch',         text:mealText(lun,portions.lunch,lang),    kcal:day.lunKcal},
-    {time:lang==='EN'?'Snack 2':'Σνακ 2',        en:'Snack 2',       text:snk2Built.text,                       kcal:day.snk2Kcal},
-    {time:lang==='EN'?'Dinner':'Βραδινό',        en:'Dinner',        text:mealText(din,portions.dinner,lang),   kcal:day.dinKcal},
-    {time:lang==='EN'?'Before sleep':'Πριν τον ύπνο',en:'Before sleep', text:sleepBuilt.text,                   kcal:day.slpKcal},
+    {time:'Πρωινό',      en:'Breakfast',     text:MEALS[brk]?MEALS[brk](ex,null):'',              kcal:day.brkKcal},
+    {time:'Σνακ 1',      en:'Snack 1',       text:snk1Built.text,                                   kcal:day.snk1Kcal},
+    {time:'Μεσημεριανό', en:'Lunch',         text:MEALS[lun]?MEALS[lun](ex,portions.lunch):'',    kcal:day.lunKcal},
+    {time:'Σνακ 2',      en:'Snack 2',       text:snk2Built.text,                                   kcal:day.snk2Kcal},
+    {time:'Βραδινό',     en:'Dinner',        text:MEALS[din]?MEALS[din](ex,portions.dinner):'',   kcal:day.dinKcal},
+    {time:'Πριν τον ύπνο',en:'Before sleep', text:sleepBuilt.text,                                  kcal:day.slpKcal},
   ];
   const planEl=document.getElementById('oneday-plan');
   if(planEl) planEl.innerHTML=meals.filter(m=>m.text&&m.text!=='—').map(m=>
     `<div class="meal-row">
       <div class="meal-time">${m.time}<div style="font-size:10px;color:var(--text-muted);font-weight:400;margin-top:2px">${m.kcal} kcal</div></div>
-      <div class="meal-desc">${m.text}<br><span class="meal-tag">${lang==='EN'?'EN':'GR'}</span></div>
+      <div class="meal-desc">${m.text}<br><span class="meal-tag">${m.en}</span></div>
     </div>`).join('');
   const gapAbs=Math.abs(day.gap);
   const gapOk=gapAbs<=100;
@@ -2730,34 +2563,21 @@ function buildOneDayPlan(){
       <tr><td style="color:var(--text-muted)">Target</td><td style="color:var(--text-muted)">${day.target}</td><td style="color:${gapColor}">${day.gap>0?'+':''}${day.gap}</td></tr>
     </tbody></table>`;
   const dashMeals=document.getElementById('dash-meals');
-  if(dashMeals){
-    const dashSnack1=buildSlotSnack('snk1', snk1Extras, 'GR');
-    const dashSnack2=buildSlotSnack('snk2', snk2Extras, 'GR');
-    const dashSleep=buildSlotSnack('sleep', sleepExtras, 'GR');
-    const dashList=[
-      {time:'Πρωινό', text:MEALS[brk]?MEALS[brk](ex,null):'', kcal:day.brkKcal},
-      {time:'Σνακ 1', text:dashSnack1.text, kcal:day.snk1Kcal},
-      {time:'Μεσημεριανό', text:MEALS[lun]?MEALS[lun](ex,portions.lunch):'', kcal:day.lunKcal},
-      {time:'Σνακ 2', text:dashSnack2.text, kcal:day.snk2Kcal},
-      {time:'Βραδινό', text:MEALS[din]?MEALS[din](ex,portions.dinner):'', kcal:day.dinKcal},
-      {time:'Πριν τον ύπνο', text:dashSleep.text, kcal:day.slpKcal},
-    ];
-    dashMeals.innerHTML=dashList.filter(m=>m.text&&m.text!=='—').map(m=>`<div class="meal-row"><div class="meal-time">${m.time}<div style="font-size:10px;color:var(--text-muted)">${m.kcal} kcal</div></div><div class="meal-desc">${m.text}</div></div>`).join('');
-  }
+  if(dashMeals) dashMeals.innerHTML=meals.filter(m=>m.text&&m.text!=='—').map(m=>`<div class="meal-row"><div class="meal-time">${m.time}<div style="font-size:10px;color:var(--text-muted)">${m.kcal} kcal</div></div><div class="meal-desc">${m.text}</div></div>`).join('');
 }
 
 // Calculates daily kcal totals for a specific day plan entry
 // (used by 7-Day plan, where each day can have its own breakfast/lunch/
 // dinner AND its own snack1/snack2/sleep selection — true per-day variety,
 // per dietitian feedback after real client testing).
-function calcDayTotalsForPlan(dayPlan, lang='GR'){
+function calcDayTotalsForPlan(dayPlan){
   const portions=getMealPortions();
   const brkComp  = MEAL_EXCHANGES[dayPlan.brk] || {};
   const lunComp  = MEAL_EXCHANGES[dayPlan.lun] || {};
   const dinComp  = MEAL_EXCHANGES[dayPlan.din] || {};
-  const snk1Built = buildSlotSnack('snk1', dayPlan.snk1Extras || [], lang);
-  const snk2Built = buildSlotSnack('snk2', dayPlan.snk2Extras || [], lang);
-  const sleepBuilt = buildSlotSnack('sleep', dayPlan.sleepExtras || [], lang);
+  const snk1Built = buildSlotSnack('snk1', dayPlan.snk1Extras || []);
+  const snk2Built = buildSlotSnack('snk2', dayPlan.snk2Extras || []);
+  const sleepBuilt = buildSlotSnack('sleep', dayPlan.sleepExtras || []);
 
   const brkKcal  = exchangesToKcal(brkComp, null);
   const lunKcal  = exchangesToKcal(lunComp, FIXED_COMPOSITION_MEALS.has(dayPlan.lun) ? null : portions.lunch);
@@ -2773,8 +2593,6 @@ function calcDayTotalsForPlan(dayPlan, lang='GR'){
 }
 
 function buildSevenDay(){
-  updateMealLanguageButtons();
-  const lang=S.mealLanguage||'GR';
   if(!S.weekPlans) S.weekPlans = WEEK_PLANS.map(p=>({...p}));
   const diet = v('p-diet')||'Omnivore';
   const filteredBrk = filteredMealOptions(BREAKFAST_OPTIONS,diet);
@@ -2803,44 +2621,43 @@ function buildSevenDay(){
   const extrasGroup=(slotKey,di,checked)=>`<div class="snack-extras-group" style="display:flex;flex-direction:column;gap:1px;margin-bottom:3px">${SNACK_EXTRAS.map(e=>`<label style="display:flex;align-items:center;gap:3px;font-size:9px;cursor:pointer;white-space:nowrap"><input type="checkbox" style="width:auto;transform:scale(0.8)" ${checked.includes(e.v)?'checked':''} onchange="toggleWeekPlanExtra(${di},'${slotKey}','${e.v}',this.checked)"> ${e.l}</label>`).join('')}</div>`;
 
   let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>';
-  html+=`<th style="background:var(--teal-600);color:#fff;padding:8px;min-width:90px">${lang==='EN'?'Meal':'Γεύμα'}</th>`;
+  html+=`<th style="background:var(--teal-600);color:#fff;padding:8px;min-width:90px">Γεύμα</th>`;
   S.weekPlans.forEach((p,di)=>{
-    const dt=calcDayTotalsForPlan(p, lang);
+    const dt=calcDayTotalsForPlan(p);
     const gapOk=Math.abs(dt.gap)<=100;
-    const dayLabel=lang==='EN' ? ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][di] : p.day;
     html+=`<th style="background:var(--teal-600);color:#fff;padding:8px;min-width:170px;text-align:center">
-      ${dayLabel}<div style="font-size:10px;font-weight:400;margin-top:2px;color:${gapOk?'#9FE1CB':'#FFD580'}">${dt.totalKcal} kcal ${gapOk?'✅':dt.gap>0?'▲':'▼'}</div>
+      ${p.day}<div style="font-size:10px;font-weight:400;margin-top:2px;color:${gapOk?'#9FE1CB':'#FFD580'}">${dt.totalKcal} kcal ${gapOk?'✅':dt.gap>0?'▲':'▼'}</div>
     </th>`;
   });
   html+='</tr></thead><tbody>';
 
   const rows=[
-    {key:'brk',  label:lang==='EN'?'🌅 Breakfast':'🌅 Πρωινό'},
-    {key:'snk1', label:lang==='EN'?'🍎 Snack 1':'🍎 Σνακ 1'},
-    {key:'lun',  label:lang==='EN'?'🍽️ Lunch':'🍽️ Μεσημεριανό'},
-    {key:'snk2', label:lang==='EN'?'🍊 Snack 2':'🍊 Σνακ 2'},
-    {key:'din',  label:lang==='EN'?'🌙 Dinner':'🌙 Βραδινό'},
-    {key:'sleep',label:lang==='EN'?'😴 Before sleep':'😴 Πριν ύπνο'},
-    {key:'kcal', label:lang==='EN'?'📊 Total kcal':'📊 Σύνολο kcal'},
+    {key:'brk',  label:'🌅 Πρωινό'},
+    {key:'snk1', label:'🍎 Σνακ 1'},
+    {key:'lun',  label:'🍽️ Μεσημεριανό'},
+    {key:'snk2', label:'🍊 Σνακ 2'},
+    {key:'din',  label:'🌙 Βραδινό'},
+    {key:'sleep',label:'😴 Πριν ύπνο'},
+    {key:'kcal', label:'📊 Σύνολο kcal'},
   ];
 
   rows.forEach((row,ri)=>{
     html+=`<tr style="background:${ri%2===0?'var(--bg-surface)':'var(--bg-page)'}">`;
     html+=`<td style="padding:8px;font-weight:700;color:var(--text-secondary);font-size:11px;border:1px solid var(--border)">${row.label}</td>`;
     S.weekPlans.forEach((p,di)=>{
-      const dt=calcDayTotalsForPlan(p, lang);
+      const dt=calcDayTotalsForPlan(p);
       const gapOk=Math.abs(dt.gap)<=100;
       let cell='';
       if(row.key==='brk'){
-        cell=sel('brk',di,filteredBrk,p.brk)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${mealText(p.brk,null,lang)}</div><div style="font-size:10px;color:var(--teal-600)">${dt.brkKcal} kcal</div>`;
+        cell=sel('brk',di,filteredBrk,p.brk)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.brk]?MEALS[p.brk](ex,null):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.brkKcal} kcal</div>`;
       } else if(row.key==='snk1'){
         cell=extrasGroup('snk1Extras',di,p.snk1Extras)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk1Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk1Kcal} kcal</div>`;
       } else if(row.key==='lun'){
-        cell=sel('lun',di,filteredLun,p.lun)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${mealText(p.lun,portions.lunch,lang)}</div><div style="font-size:10px;color:var(--teal-600)">${dt.lunKcal} kcal</div>`;
+        cell=sel('lun',di,filteredLun,p.lun)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.lun]?MEALS[p.lun](ex,portions.lunch):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.lunKcal} kcal</div>`;
       } else if(row.key==='snk2'){
         cell=extrasGroup('snk2Extras',di,p.snk2Extras)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.snk2Text}</div><div style="font-size:10px;color:var(--teal-600)">${dt.snk2Kcal} kcal</div>`;
       } else if(row.key==='din'){
-        cell=sel('din',di,filteredDin,p.din)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${mealText(p.din,portions.dinner,lang)}</div><div style="font-size:10px;color:var(--teal-600)">${dt.dinKcal} kcal</div>`;
+        cell=sel('din',di,filteredDin,p.din)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${MEALS[p.din]?MEALS[p.din](ex,portions.dinner):''}</div><div style="font-size:10px;color:var(--teal-600)">${dt.dinKcal} kcal</div>`;
       } else if(row.key==='sleep'){
         cell=extrasGroup('sleepExtras',di,p.sleepExtras)+`<div style="color:var(--text-primary);font-size:11px;font-weight:500">${dt.slpText}</div><div style="font-size:10px;color:var(--teal-600)">${dt.slpKcal} kcal</div>`;
       } else if(row.key==='kcal'){
@@ -2906,8 +2723,8 @@ function buildReport(){
     <!-- HEADER -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:3px solid var(--teal-600);margin-bottom:14px">
       <div>
-        <div style="font-size:20px;font-weight:700;color:var(--teal-800)">NutriFlow</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Smart nutrition software</div>
+        <div style="font-size:20px;font-weight:700;color:var(--teal-800)">🌿 Διατροφικό Πλάνο</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">NutriEngine · Κλινική Διαιτολογία</div>
       </div>
       <div style="text-align:right;font-size:12px;color:var(--text-muted)">
         <div><strong>${S.name||'—'}</strong></div>
@@ -3006,15 +2823,258 @@ function buildReport(){
 
     <!-- FOOTER -->
     <div style="margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#aaa;text-align:center">
-      NutriFlow · Smart nutrition software · ${today} · Για κλινική χρήση μόνο · Συντάχθηκε από εγκεκριμένο διαιτολόγο
+      NutriEngine Clinical Nutrition Toolkit · ${today} · Για κλινική χρήση μόνο · Συντάχθηκε από εγκεκριμένο διαιτολόγο
     </div>
   </div>`);
 }
 
 // ═══════════════════════════════════════════
-//  ENGINE SAFETY CHECKS
+// ENTERAL NUTRITION MODULE (inpatient/hospital practice)
+// Based on: ESPEN practical guideline — Nutritional support for polymorbid
+// medical inpatients, Clin Nutr 2024;43:674-691. Screening tools (MUST,
+// NRS-2002, EAT-10) per their original published sources.
+// This module computes TARGETS and FORMULA MATH only. It deliberately does
+// NOT decide feeding route (oral/EN/PN) — that requires bedside clinical
+// assessment by the treating team. See renderEnteralGuidance() for the
+// reference-only decision ladder.
 // ═══════════════════════════════════════════
 
+function renderEAT10Items(){
+  const container = document.getElementById('en-eat10-items');
+  if(!container || container.children.length) return; // idempotent — never wipe live answers
+  let html='';
+  EAT10_ITEMS.forEach((item,i)=>{
+    const n=i+1;
+    html+=`<div class="form-field"><label>${n}. ${item.gr}<br><span style="font-weight:400;color:var(--text-muted)">${item.en}</span></label><input type="number" id="en-eat10-q${n}" min="0" max="4" step="1" placeholder="0–4" oninput="calcEAT10()"></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function calcMUST(){
+  const bmiDisplay=document.getElementById('en-must-bmi-display');
+  const bmi = S.bmi || null;
+  if(bmiDisplay) bmiDisplay.value = bmi ? bmi.toFixed(1) : '— (fill Client Profile)';
+
+  let bmiScore = 0;
+  if(bmi){ if(bmi<18.5) bmiScore=2; else if(bmi<20.0) bmiScore=1; else bmiScore=0; }
+
+  const wl = parseFloat(v('en-must-weightloss'));
+  let wlScore = 0;
+  if(!isNaN(wl)){ if(wl>10) wlScore=2; else if(wl>=5) wlScore=1; else wlScore=0; }
+
+  const acute = document.getElementById('en-must-acute')?.checked;
+  const acuteBonus = acute ? 2 : 0;
+
+  const total = bmiScore + wlScore + acuteBonus;
+  let risk, action, color;
+  if(total===0){ risk='Low risk (Χαμηλός Κίνδυνος)'; color='ok';
+    action='Routine clinical care. Repeat screening — Hospital: weekly · Care home: monthly · Community: yearly for special groups (e.g. age &gt;75y).'; }
+  else if(total===1){ risk='Medium risk (Μεσαίος Κίνδυνος)'; color='warn';
+    action='Observe. Hospital: 3-day record of dietary intake & fluids. If intake adequate → continue routine care; if inadequate → follow local policy, set goals, improve & increase nutritional intake, monitor & review (Hospital weekly · Home care monthly · Community every 2–3 months).'; }
+  else { risk='High risk (Μεγάλος Κίνδυνος)'; color='err';
+    action='Treat. Refer to dietitian / Nutritional Support Team or follow local guidelines. Set goals, improve & increase overall nutritional intake. Monitor & review care plan — Hospital: weekly · Care home: monthly · Community: monthly. (*unless treatment considered of no benefit, e.g. imminent death.)'; }
+
+  setEl('en-must-result', `
+    <div class="alert ${color}"><span><strong>MUST total score: ${total}</strong> — ${risk}<br><span style="font-size:12px">BMI score ${bmiScore} + weight-loss score ${wlScore} + acute illness ${acuteBonus}</span></span></div>
+    <div class="field-note" style="margin-top:6px">${action}</div>
+  `);
+}
+
+function calcNRS(){
+  const nutritionScore = parseInt(v('en-nrs-nutrition'))||0;
+  const diseaseScore = parseInt(v('en-nrs-disease'))||0;
+  const ageBonus = (S.age && S.age>=70) ? 1 : 0;
+  const total = nutritionScore + diseaseScore + ageBonus;
+  const atRisk = total>=3;
+  setEl('en-nrs-result', `
+    <div class="alert ${atRisk?'err':'ok'}"><span><strong>NRS-2002 total score: ${total}</strong> (nutrition ${nutritionScore} + disease ${diseaseScore} + age≥70 ${ageBonus})<br>
+    ${atRisk ? 'At nutritional risk — initiate a nutritional care plan.' : 'Not currently at nutritional risk by NRS-2002. Re-screen weekly. If the patient is scheduled for major surgery, consider a preventive nutritional care plan regardless of this score, to avoid the associated risk.'}</span></div>
+  `);
+}
+
+function calcEAT10(){
+  let total=0, anyFilled=false;
+  for(let i=1;i<=10;i++){
+    const val=parseInt(v('en-eat10-q'+i));
+    if(!isNaN(val)){ total+=val; anyFilled=true; }
+  }
+  if(!anyFilled){ setEl('en-eat10-result', ''); return; }
+  const flagged = total>=3;
+  setEl('en-eat10-result', `
+    <div class="alert ${flagged?'err':'ok'}"><span><strong>EAT-10 total: ${total} / 40</strong><br>
+    ${flagged ? '⚠ Score ≥3 suggests a possible swallowing problem — discuss with your supervisor; a formal swallow assessment (e.g. SLP) may be warranted before continuing/starting oral intake.' : 'Score &lt;3 — no strong signal of a swallowing problem from this screen alone.'}</span></div>
+  `);
+}
+
+function applyFormulaPreset(){
+  const preset = v('en-formula-preset');
+  const presets = {
+    standard:   {kcal:1.0, protein:4.0},
+    dense:      {kcal:1.5, protein:6.0},
+    highprotein:{kcal:1.2, protein:7.5},
+    fiber:      {kcal:1.0, protein:4.0},
+  };
+  if(presets[preset]){
+    document.getElementById('en-formula-kcal-ml').value = presets[preset].kcal;
+    document.getElementById('en-formula-protein-100ml').value = presets[preset].protein;
+  }
+  calcEnteralFormula();
+}
+
+// Shared by calcEnteralTargets() and calcEnteralFormula() so the formula
+// calculator always uses the exact same target numbers shown above it.
+function getEnteralTargetsForCurrentInputs(){
+  const weight = S.weight || 0;
+  const approach = v('en-energy-approach') || 'general';
+  const kcalPerKg = parseFloat(v('en-kcal-per-kg')) || 0;
+  const proteinPerKg = parseFloat(v('en-protein-per-kg')) || 0;
+  const kcalTarget = weight * kcalPerKg;
+  const proteinTarget = weight * proteinPerKg;
+  return {weight, approach, kcalPerKg, proteinPerKg, kcalTarget, proteinTarget};
+}
+
+function calcEnteralTargets(){
+  // Auto-suggest a sensible default kcal/kg when the approach changes,
+  // without overwriting a value the clinician already typed deliberately —
+  // only adjust when the field still holds one of the OTHER presets' defaults.
+  const approach = v('en-energy-approach');
+  const kcalEl = document.getElementById('en-kcal-per-kg');
+  const knownDefaults = [25,27,27.5,30];
+  if(kcalEl && knownDefaults.includes(parseFloat(kcalEl.value))){
+    kcalEl.value = approach==='underweight' ? 30 : 27;
+  }
+
+  // Renal protein adjustment: ESPEN R13 — 0.8 g/kg/day if eGFR<30 and NOT
+  // on kidney replacement therapy (dialysis patients need MORE protein, not less).
+  const egfr = parseFloat(S.labValues && S.labValues.egfr);
+  const onDialysis = document.getElementById('en-on-dialysis')?.checked;
+  const proteinEl = document.getElementById('en-protein-per-kg');
+  const currentProtein = proteinEl ? parseFloat(proteinEl.value) : null;
+  let renalNote = '';
+  if(!isNaN(egfr) && egfr<30 && !onDialysis){
+    if(proteinEl && currentProtein>=1.2) proteinEl.value = 0.8;
+    renalNote = `<div class="alert warn" style="margin-top:8px">⚠ eGFR ${egfr} (&lt;30) and not on dialysis — ESPEN recommends a LOWER protein target of 0.8 g/kg/day (not 1.2–1.5) unless your supervisor advises otherwise.</div>`;
+  } else {
+    // FIX: if the field is still sitting at the auto-suggested 0.8 from a
+    // PRIOR restricted state (e.g. clinician just checked "on dialysis"
+    // after the field had already been auto-lowered), restore it to a
+    // normal default rather than silently leaving a now-stale, clinically
+    // inappropriate low protein target in place.
+    if(proteinEl && currentProtein===0.8) proteinEl.value = 1.3;
+    if(!isNaN(egfr) && egfr<30 && onDialysis){
+      renalNote = `<div class="field-note">eGFR ${egfr} but on dialysis — the usual 1.2–1.5 g/kg/day protein target still applies; dialysis patients are NOT protein-restricted (losses during dialysis increase needs).</div>`;
+    }
+  }
+
+  const t = getEnteralTargetsForCurrentInputs();
+  const refeedingWarning = (t.approach==='underweight')
+    ? `<div class="alert err" style="margin-top:8px">⚠ Severely underweight target selected — high refeeding syndrome risk. Achieve this target CAUTIOUSLY and SLOWLY (do not start at full rate). Check baseline phosphate, potassium, magnesium, and thiamine before starting; monitor daily for the first week.</div>`
+    : '';
+
+  setEl('en-targets-result', `
+    <div class="metrics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="metric"><div class="m-label">Energy target</div><div class="m-value">${Math.round(t.kcalTarget)} kcal/day</div><div class="field-note">${t.kcalPerKg} kcal/kg × ${t.weight||'—'} kg</div></div>
+      <div class="metric"><div class="m-label">Protein target</div><div class="m-value">${t.proteinTarget.toFixed(0)} g/day</div><div class="field-note">${t.proteinPerKg} g/kg × ${t.weight||'—'} kg</div></div>
+    </div>
+    <div class="field-note" style="margin-top:8px">ESPEN R25: aim for at least 75% of these targets (≈${Math.round(t.kcalTarget*0.75)} kcal / ${(t.proteinTarget*0.75).toFixed(0)} g protein) to meaningfully reduce risk of adverse outcomes — 100% is the goal but 75% is the evidence-based minimum to aim for if full targets aren't immediately achievable.</div>
+    ${refeedingWarning}
+    ${renalNote}
+  `);
+  calcEnteralFormula();
+}
+
+function calcEnteralFormula(){
+  const t = getEnteralTargetsForCurrentInputs();
+  const kcalMl = parseFloat(v('en-formula-kcal-ml')) || 0;
+  const proteinPer100 = parseFloat(v('en-formula-protein-100ml')) || 0;
+  const infusionHours = parseFloat(v('en-infusion-hours')) || 0;
+  const bolusFeeds = parseFloat(v('en-bolus-feeds')) || 0;
+
+  if(!kcalMl || !t.kcalTarget){ setEl('en-formula-result', '<div class="field-note">Enter weight (Client Profile) and formula kcal/mL to calculate.</div>'); return; }
+
+  const volumeMl = t.kcalTarget / kcalMl;
+  const deliveredProtein = volumeMl * (proteinPer100/100);
+  const proteinGapG = deliveredProtein - t.proteinTarget;
+  const rateMlHr = infusionHours ? volumeMl/infusionHours : null;
+  const bolusMl = bolusFeeds ? volumeMl/bolusFeeds : null;
+
+  setEl('en-formula-result', `
+    <div class="metrics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="metric"><div class="m-label">Required daily volume</div><div class="m-value">${Math.round(volumeMl)} mL/day</div></div>
+      <div class="metric"><div class="m-label">Protein delivered at this volume</div><div class="m-value">${deliveredProtein.toFixed(0)} g/day</div></div>
+    </div>
+    <div class="alert ${Math.abs(proteinGapG)<5?'ok':'warn'}" style="margin-top:8px">
+      ${proteinGapG < -5 ? `⚠ This volume under-delivers protein by ${Math.abs(proteinGapG).toFixed(0)} g vs target — consider a higher-protein formula or adding a protein module/fortifier.`
+        : proteinGapG > 5 ? `ℹ This volume over-delivers protein by ${proteinGapG.toFixed(0)} g vs target — usually fine, but worth noting if fluid or renal restriction also applies.`
+        : `✅ Protein at this volume is within ~5g of target.`}
+    </div>
+    <div class="form-grid two" style="margin-top:10px">
+      <div class="metric"><div class="m-label">Continuous rate</div><div class="m-value">${rateMlHr?rateMlHr.toFixed(0)+' mL/hr':'—'}</div><div class="field-note">over ${infusionHours||'—'}h/day</div></div>
+      <div class="metric"><div class="m-label">OR bolus volume</div><div class="m-value">${bolusMl?bolusMl.toFixed(0)+' mL/feed':'—'}</div><div class="field-note">× ${bolusFeeds||'—'} feeds/day</div></div>
+    </div>
+    <div class="field-note" style="margin-top:8px">If refeeding risk was flagged above: start at roughly 25–50% of this volume/rate on day 1, increase over 2–3 days as electrolytes are monitored and remain stable — do not start at the full calculated rate.</div>
+  `);
+}
+
+function renderEnteralGuidance(){
+  setEl('en-guidance', `
+    <div class="card" style="background:var(--bg-page)">
+      <div class="card-body" style="font-size:13px;line-height:1.7">
+        <p><strong>Timing:</strong> early nutritional support (started &lt;48h after admission) is associated with lower mortality and adverse events than later support (ESPEN, Grade A). Don't wait for a "perfect" plan to start something reasonable.</p>
+        <p><strong>Route ladder (reference only — your team decides):</strong> 1) Oral nutrition ± oral nutritional supplements, if it can be done safely (check EAT-10 / swallow assessment above) → reassess every 24–48h against the ≥75% target → 2) if still not met, add/move to Enteral Nutrition (EN) + oral → reassess every 24–48h → 3) if still not met, add Parenteral Nutrition (PN) + oral/EN. EN is generally preferred over PN when the gut is functional — lower infection risk and better preserves gut integrity.</p>
+        <p><strong>Older patients on EN:</strong> formulas enriched with a mix of soluble and insoluble fiber can help bowel function (lower diarrhea/constipation rates).</p>
+        <p><strong>Reassessment:</strong> every 24–48h against the energy/protein targets above; track functional status (e.g. handgrip strength) alongside nutritional intake — functional decline can be a more sensitive signal than weight alone.</p>
+        <p><strong>Medication interactions:</strong> several common drugs interact with EN feeds or specific nutrients (e.g. tetracyclines/divalent cations, ceftriaxone/calcium, warfarin/vitamin K, levothyroxine timing relative to feeds) — flag anything you're unsure about to a pharmacist rather than guessing.</p>
+        <div class="field-note">Source: ESPEN practical guideline — Nutritional support for polymorbid medical inpatients, Clin Nutr 2024;43:674–691.</div>
+      </div>
+    </div>
+  `);
+}
+
+// ── HOME ENTERAL NUTRITION (HEN) — added from ESPEN guideline on home
+// enteral nutrition, Clin Nutr 2020;39:5-22. Scope deliberately limited to
+// what a dietitian actively decides or monitors (access-device TIMING and
+// formula selection, monitoring schedule, termination criteria) — NOT
+// device placement technique, stoma/wound care, or drug-administration
+// mechanics through the tube, which stay with medical/nursing/pharmacy.
+function calcHenAccessDevice(){
+  const duration = v('hen-duration');
+  let html;
+  if(duration==='short'){
+    html = `<div class="alert ok"><span><strong>Nasogastric (NG) tube</strong> is appropriate for short-term feeding (up to 4–6 weeks) — ESPEN Grade 0, Consensus 90%. Even longer periods are possible with fine-bore NG tubes if PEG/RIG isn't suitable for this patient.</span></div>`;
+  } else {
+    html = `<div class="alert ok"><span><strong>PEG (or PEJ if indicated)</strong> is the preferred access device for long-term HEN — ESPEN Grade B, Strong consensus 93%. PEG is generally preferred over surgical gastrostomy (lower complications, cost, operating time — Grade B). Once placed: adults with uncomplicated gastrostomy can commence EN within 2–4 hours post-procedure (Grade A, Strong consensus 100%) — no need for a traditional slow water-then-formula start.</span></div>`;
+  }
+  setEl('hen-access-result', html);
+}
+
+function calcHenFormulaSelection(){
+  const situation = v('hen-situation');
+  const cards = {
+    none: `<div class="alert ok"><span>Standard commercial formula is appropriate (ESPEN Grade 0, Strong consensus 92%) — no specific modification indicated by the situation selected.</span></div>`,
+    diarrhea: `<div class="alert warn"><span><strong>Fiber-containing formula should normally be used</strong> — ESPEN Grade A, Strong consensus 92%. A mix of soluble and insoluble fiber is generally most effective; this is one of the few Grade A recommendations in this guideline, reflecting strong RCT evidence.</span></div>`,
+    constipation: `<div class="alert warn"><span><strong>Fiber-containing formula should be used</strong> — ESPEN Grade B, Strong consensus 96%.</span></div>`,
+    diabetes: `<div class="alert warn"><span><strong>A diabetes-specific formula MAY be used</strong> (lower sugar content, slowly-digestible carbohydrate, fat enriched in unsaturated/monounsaturated fatty acids) — ESPEN Grade 0, but only <strong>Majority agreement (60%)</strong> — notably weaker consensus than most other recommendations in this guideline. Standard formula with attentive glycemic monitoring remains a reasonable alternative; this is a "may consider," not a strong directive.</span></div>`,
+    diarrhea_diabetes: `<div class="alert warn"><span><strong>Both apply:</strong> fiber-containing formula for the diarrhea (Grade A) — ideally also diabetes-appropriate (lower sugar, MUFA-enriched) if a combined product is available (Grade 0, Majority agreement 60% only). If no single product covers both well, prioritize the fiber/diarrhea management (the stronger-evidence recommendation) and monitor glycemic control separately.</span></div>`,
+  };
+  setEl('hen-formula-result', cards[situation] || cards.none);
+  // Auto-trigger the access device card too, in case it hasn't rendered yet
+  if(!document.getElementById('hen-access-result').innerHTML) calcHenAccessDevice();
+}
+
+function renderHenReference(){
+  setEl('hen-reference', `
+    <div class="card" style="background:var(--bg-page)">
+      <div class="card-body" style="font-size:13px;line-height:1.7">
+        <p><strong>Blenderized / home-made feeds:</strong> ESPEN advises against routinely using home-made blenderized admixtures in place of commercial formula or commercial "whole food" products — they're less standardized and carry more contamination/safety risk (GPP, but only Majority/Consensus 63–76% agreement — not strong consensus, so this is a softer recommendation than most others here, and some patients/families may still prefer it with appropriate safety counseling).</p>
+        <p><strong>Monitoring (dietitian-relevant):</strong> body weight, body composition (fat-free/muscle mass), hydration status, and functional status (e.g. handgrip strength) are the primary efficacy markers — track these over food/lab values alone. Functional decline can show up before weight does. No fixed universal interval is specified — local protocol and the patient's stability should set the schedule (more frequent early on, e.g. monthly, spacing out once stable).</p>
+        <p><strong>Quality of life (QoL):</strong> should be measured periodically throughout HEN, not just at initiation — it's a distinct, patient-centered outcome from nutritional/functional status and often the thing that actually drives whether HEN feels sustainable to the patient and family.</p>
+        <p><strong>When to consider stopping HEN:</strong> the desired weight has been reached AND oral intake alone now meets the patient's maintenance needs. (Decisions to stop for other reasons — e.g. a severe complication, transfer to a facility, or end-of-life care — are multidisciplinary/medical decisions, not purely nutritional ones.)</p>
+        <div class="field-note">Source: ESPEN guideline on home enteral nutrition, Clin Nutr 2020;39:5–22. This summary covers monitoring/formula/termination only — device placement, stoma/wound care technique, and drug-administration mechanics through the tube are nursing/medical/pharmacy scope and not reproduced here.</div>
+      </div>
+    </div>
+  `);
+}
 
 function renderEngine(){
   calcExchanges();
@@ -3079,7 +3139,12 @@ function renderEngine(){
   let overallHtml=`<div class="alert ${hasErr?'err':hasWarn?'warn':'ok'}" style="font-size:14px;font-weight:600">
     ${hasErr?'❌ REVIEW REQUIRED — resolve errors before printing':hasWarn?'⚠️ CHECKS NEEDED — review warnings before printing':'✅ READY — all checks passed. Safe to print.'}
   </div>`;
-if (anyCapped) {
+
+  if (conditions.length > 1) {
+    overallHtml += `<div class="alert info" style="margin-top:10px"><span><strong>ℹ️ Multiple conditions selected:</strong> ${conditions.join(', ')}. Caps below already reflect the most restrictive combination across all of them.</span></div>`;
+  }
+
+  if (anyCapped) {
     const targetKcal=Math.round(kcal), planKcalR=Math.round(planKcal), coverage=kcal?Math.round((planKcal/kcal)*100):0;
     const items=[];
     if(gapData.proteinCapped) items.push(`<strong>Protein:</strong> target ${Math.round(S.protG)}g/day, realistic plan covers ~${Math.round(S.protG-gapData.proGap)}g/day (${gapData.proGap}g short).`);
@@ -3104,7 +3169,7 @@ if (anyCapped) {
   setEl('engine-overall', overallHtml);
 
   setEl('engine-realism',`<table><thead><tr><th>Condition(s)</th><th>Protein cap/meal</th><th>Protein cap/day</th><th>Oil cap/meal</th><th>Oil cap/day</th><th>Starch cap/day</th><th>Status</th></tr></thead><tbody>
-    <tr><td>${conditions.map(conditionLabel).join(', ')} / ${S.sex==='M'?'Male':'Female'}</td><td>${caps.proteinPerMealMax} ex (${caps.proteinPerMealMax*gramsPerEx}g)</td><td>${caps.proteinDailyMax} ex (${caps.proteinDailyMax*gramsPerEx}g)</td><td>${caps.fatPerMealMax} tsp</td><td>${caps.fatDailyMax} tsp</td><td>${caps.starchDailyMax} ex</td><td><span class="badge ok">Caps enforced</span></td></tr>
+    <tr><td>${conditions.join(', ')} / ${S.sex==='M'?'Male':'Female'}</td><td>${caps.proteinPerMealMax} ex (${caps.proteinPerMealMax*gramsPerEx}g)</td><td>${caps.proteinDailyMax} ex (${caps.proteinDailyMax*gramsPerEx}g)</td><td>${caps.fatPerMealMax} tsp</td><td>${caps.fatDailyMax} tsp</td><td>${caps.starchDailyMax} ex</td><td><span class="badge ok">Caps enforced</span></td></tr>
   </tbody></table>`);
 
   setEl('engine-gap',`<table><thead><tr><th>Metric</th><th>Value</th><th>Status</th><th>Clinical interpretation</th></tr></thead><tbody>
@@ -3128,9 +3193,9 @@ function updateDashMetrics(){
   if(bmiEl&&S.bmi) bmiEl.className='m-value '+(S.bmi<18.5||S.bmi>=30?'err':S.bmi<25?'ok':'warn');
   setEl('d-bmi-cat',S.bmiCat||'—');
   const condList=(S.conditions&&S.conditions.length)?S.conditions:['General'];
-  setEl('d-cond', condList.length>1 ? condList.length+' conditions' : conditionLabel(condList[0]));
+  setEl('d-cond', condList.length>1 ? condList.length+' conditions' : condList[0]);
   const dCondEl=document.getElementById('d-cond');
-  if(dCondEl) dCondEl.title=condList.map(conditionLabel).join(', ');
+  if(dCondEl) dCondEl.title=condList.join(', ');
   setEl('d-goal-sub',S.goal);
   const incomplete=!S.name||!S.age||!S.height||!S.weight;
   const macroOk=Math.abs(S.carbPct+S.protPct+S.fatPct-100)<=1;
@@ -3284,6 +3349,21 @@ const LAB_TESTS = [
   {key:'pth',      gr:'PTH', en:'Parathyroid Hormone', unit:'pg/mL', low:15, high:65, highMsg:'Συχνό σε CKD — σχετίζεται με Ca/Φώσφορο/Βιταμίνη D'},
   {key:'calcium',  gr:'Ασβέστιο', en:'Calcium', unit:'mg/dL', low:8.5, high:10.5},
   {key:'magnesium',gr:'Μαγνήσιο', en:'Magnesium', unit:'mg/dL', low:1.7, high:2.2, lowMsg:'Χαμηλό μαγνήσιο — συχνό με PPI/διουρητικά/διαβήτη'},
+];
+
+// ── EAT-10 swallowing/dysphagia screen ──
+// Belafsky et al. 2008. Each item scored 0 (no problem) – 4 (severe problem).
+const EAT10_ITEMS = [
+  {gr:'Το πρόβλημα κατάποσης μου έχει προκαλέσει απώλεια βάρους', en:'My swallowing problem has caused me to lose weight'},
+  {gr:'Το πρόβλημα κατάποσής μου μειώνει την ικανότητα να βγω έξω για φαγητό', en:'My swallowing problem interferes with my ability to go out for meals'},
+  {gr:'Η κατάποση υγρών απαιτεί έξτρα προσπάθεια', en:'Swallowing liquids takes extra effort'},
+  {gr:'Η κατάποση στερεών απαιτεί έξτρα προσπάθεια', en:'Swallowing solids takes extra effort'},
+  {gr:'Η κατάποση χαπιών απαιτεί έξτρα προσπάθεια', en:'Swallowing pills takes extra effort'},
+  {gr:'Όταν καταπίνω πονάω', en:'Swallowing is painful'},
+  {gr:'Η ευχαρίστηση του φαγητού επηρεάζεται από την κατάποση', en:'The pleasure of eating is affected by my swallowing'},
+  {gr:'Όταν καταπίνω το φαγητό κολλάει στον λαιμό μου', en:'When I swallow food sticks in my throat'},
+  {gr:'Βήχω όταν τρώω', en:'I cough when I eat'},
+  {gr:'Η κατάποση μου προκαλεί στρες', en:'Swallowing is stressful'},
 ];
 
 // ── VITAMIN/MINERAL SUGGESTIONS BY CONDITION ──
@@ -3467,231 +3547,6 @@ function renderVitaminSuggestions(){
 }
 
 // ═══════════════════════════════════════════
-//  FOOD DATABASE — OPEN FOOD FACTS
-// ═══════════════════════════════════════════
-function foodNumber(value){
-  const n=parseFloat(value);
-  return Number.isFinite(n) ? n : null;
-}
-function formatFoodNumber(value, unit){
-  const n=foodNumber(value);
-  return n===null ? '—' : `${Math.round(n*10)/10}${unit||''}`;
-}
-function normalizeFoodProduct(product){
-  const nutr=product.nutriments||{};
-  return {
-    code:product.code||'',
-    name:product.product_name || product.generic_name || 'Unnamed food',
-    brand:product.brands||'',
-    serving:product.serving_size||'',
-    image:product.image_front_small_url||'',
-    kcal100:foodNumber(nutr['energy-kcal_100g'] ?? nutr['energy-kcal']),
-    carbs100:foodNumber(nutr.carbohydrates_100g),
-    protein100:foodNumber(nutr.proteins_100g),
-    fat100:foodNumber(nutr.fat_100g),
-  };
-}
-async function searchFoodDatabase(){
-  const query=(v('food-search')||'').trim();
-  if(!query){ setEl('fooddb-status','Enter a food name to search.'); return; }
-  setEl('fooddb-status','Searching Open Food Facts...');
-  setEl('fooddb-results','');
-  const params=new URLSearchParams({
-    search_terms:query,
-    search_simple:'1',
-    action:'process',
-    json:'1',
-    page_size:'20',
-    fields:'code,product_name,generic_name,brands,serving_size,image_front_small_url,nutriments'
-  });
-  try{
-    const res=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params.toString()}`);
-    if(!res.ok) throw new Error(`Open Food Facts returned ${res.status}`);
-    const data=await res.json();
-    const products=(data.products||[]).map(normalizeFoodProduct).filter(p=>p.name && (p.kcal100!==null || p.carbs100!==null || p.protein100!==null || p.fat100!==null));
-    S.foodResults=products;
-    renderFoodResults(products);
-    setEl('fooddb-status', products.length ? `${products.length} foods found. Nutrition shown per 100g.` : 'No foods with nutrition values found. Try another search term.');
-  }catch(err){
-    setEl('fooddb-status', `Food search failed: ${err.message}`);
-  }
-}
-function renderFoodResults(products){
-  const el=document.getElementById('fooddb-results'); if(!el) return;
-  if(!products || !products.length){ el.innerHTML=''; return; }
-  el.innerHTML=`<table><thead><tr><th>Food</th><th>Serving</th><th>kcal/100g</th><th>Carb</th><th>Protein</th><th>Fat</th><th>Recipe</th></tr></thead><tbody>${products.map((p,i)=>`
-    <tr>
-      <td><strong>${p.name}</strong><div style="font-size:11px;color:var(--text-muted)">${p.brand||'Open Food Facts'}${p.code?` · ${p.code}`:''}</div></td>
-      <td>${p.serving||'—'}</td>
-      <td>${formatFoodNumber(p.kcal100,'')}</td>
-      <td>${formatFoodNumber(p.carbs100,'g')}</td>
-      <td>${formatFoodNumber(p.protein100,'g')}</td>
-      <td>${formatFoodNumber(p.fat100,'g')}</td>
-      <td><button class="btn" style="padding:4px 8px;font-size:11px" onclick="addFoodResultToRecipe(${i})">+ Add</button></td>
-    </tr>`).join('')}</tbody></table>`;
-}
-
-// ═══════════════════════════════════════════
-//  RECIPES
-// ═══════════════════════════════════════════
-function recipeStorageKey(){
-  return `nutriflow_recipes_${currentUser ? currentUser.id : 'local'}`;
-}
-function blankIngredientFromInputs(){
-  return {
-    name:(v('ing-name')||'Ingredient').trim(),
-    grams:foodNumber(v('ing-grams'))||0,
-    kcal100:foodNumber(v('ing-kcal'))||0,
-    carbs100:foodNumber(v('ing-carbs'))||0,
-    protein100:foodNumber(v('ing-protein'))||0,
-    fat100:foodNumber(v('ing-fat'))||0,
-  };
-}
-function ingredientTotals(ing){
-  const factor=(foodNumber(ing.grams)||0)/100;
-  return {
-    kcal:(foodNumber(ing.kcal100)||0)*factor,
-    carbs:(foodNumber(ing.carbs100)||0)*factor,
-    protein:(foodNumber(ing.protein100)||0)*factor,
-    fat:(foodNumber(ing.fat100)||0)*factor,
-  };
-}
-function recipeTotals(ingredients){
-  return (ingredients||[]).reduce((acc,ing)=>{
-    const t=ingredientTotals(ing);
-    acc.kcal+=t.kcal; acc.carbs+=t.carbs; acc.protein+=t.protein; acc.fat+=t.fat;
-    return acc;
-  },{kcal:0,carbs:0,protein:0,fat:0});
-}
-function addManualIngredient(){
-  const ing=blankIngredientFromInputs();
-  if(!ing.name || ing.grams<=0){ alert('Enter an ingredient name and grams used.'); return; }
-  S.recipeDraft.push(ing);
-  ['ing-name','ing-grams','ing-kcal','ing-carbs','ing-protein','ing-fat'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
-  renderRecipeDraft();
-}
-function addFoodResultToRecipe(index){
-  const p=S.foodResults && S.foodResults[index];
-  if(!p){ alert('Food result not found.'); return; }
-  S.recipeDraft.push({
-    name:p.name,
-    grams:100,
-    kcal100:p.kcal100||0,
-    carbs100:p.carbs100||0,
-    protein100:p.protein100||0,
-    fat100:p.fat100||0,
-  });
-  nav('recipes');
-  renderRecipeDraft();
-}
-function updateRecipeIngredient(index, field, value){
-  if(!S.recipeDraft[index]) return;
-  S.recipeDraft[index][field]=field==='name' ? value : (foodNumber(value)||0);
-  renderRecipeDraft();
-}
-function removeRecipeIngredient(index){
-  S.recipeDraft.splice(index,1);
-  renderRecipeDraft();
-}
-function clearRecipeDraft(){
-  S.recipeDraft=[];
-  const n=document.getElementById('recipe-name'), s=document.getElementById('recipe-servings');
-  if(n) n.value='';
-  if(s) s.value='1';
-  renderRecipeDraft();
-}
-function renderRecipeDraft(){
-  const el=document.getElementById('recipe-draft'); if(!el) return;
-  const servings=Math.max(1, parseInt(v('recipe-servings')||'1',10)||1);
-  const total=recipeTotals(S.recipeDraft);
-  const per={kcal:total.kcal/servings, carbs:total.carbs/servings, protein:total.protein/servings, fat:total.fat/servings};
-  const rows=(S.recipeDraft||[]).map((ing,i)=>{
-    const t=ingredientTotals(ing);
-    return `<tr>
-      <td><input type="text" value="${ing.name||''}" oninput="updateRecipeIngredient(${i},'name',this.value)" style="min-width:140px"></td>
-      <td><input type="number" value="${ing.grams||0}" oninput="updateRecipeIngredient(${i},'grams',this.value)" style="width:80px"></td>
-      <td>${formatFoodNumber(t.kcal,'')}</td>
-      <td>${formatFoodNumber(t.carbs,'g')}</td>
-      <td>${formatFoodNumber(t.protein,'g')}</td>
-      <td>${formatFoodNumber(t.fat,'g')}</td>
-      <td><button class="btn" style="padding:4px 8px;font-size:11px" onclick="removeRecipeIngredient(${i})">Remove</button></td>
-    </tr>`;
-  }).join('');
-  el.innerHTML=`<table><thead><tr><th>Ingredient</th><th>g used</th><th>kcal</th><th>Carb</th><th>Protein</th><th>Fat</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:16px">No ingredients yet.</td></tr>'}</tbody></table>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px">
-      <div class="metric"><span class="metric-label">Total kcal</span><span class="metric-value">${Math.round(total.kcal)}</span></div>
-      <div class="metric"><span class="metric-label">Per serving kcal</span><span class="metric-value">${Math.round(per.kcal)}</span></div>
-      <div class="metric"><span class="metric-label">Per serving carbs</span><span class="metric-value">${formatFoodNumber(per.carbs,'g')}</span></div>
-      <div class="metric"><span class="metric-label">Per serving protein</span><span class="metric-value">${formatFoodNumber(per.protein,'g')}</span></div>
-      <div class="metric"><span class="metric-label">Per serving fat</span><span class="metric-value">${formatFoodNumber(per.fat,'g')}</span></div>
-    </div>`;
-}
-function persistRecipesLocal(){
-  try{ localStorage.setItem(recipeStorageKey(), JSON.stringify(S.recipes||[])); }catch(e){}
-}
-function loadRecipesLocal(){
-  try{ return JSON.parse(localStorage.getItem(recipeStorageKey())||'[]')||[]; }catch(e){ return []; }
-}
-async function loadRecipes(){
-  if(currentUser){
-    const {data,error}=await sb.from('recipes').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
-    if(!error && data){
-      S.recipes=data.map(r=>({id:r.id,name:r.name,servings:r.servings||1,ingredients:r.ingredients||[],nutrition:r.nutrition||recipeTotals(r.ingredients||[])}));
-      renderRecipesList();
-      return;
-    }
-  }
-  S.recipes=loadRecipesLocal();
-  renderRecipesList();
-}
-async function saveRecipe(){
-  const name=(v('recipe-name')||'').trim();
-  const servings=Math.max(1, parseInt(v('recipe-servings')||'1',10)||1);
-  if(!name){ alert('Enter a recipe name.'); return; }
-  if(!S.recipeDraft.length){ alert('Add at least one ingredient.'); return; }
-  const recipe={id:`recipe_${Date.now()}`,name,servings,ingredients:S.recipeDraft.map(x=>({...x})),nutrition:recipeTotals(S.recipeDraft),updated_at:new Date().toISOString()};
-  if(currentUser){
-    const row={user_id:currentUser.id,name:recipe.name,servings:recipe.servings,ingredients:recipe.ingredients,nutrition:recipe.nutrition,updated_at:recipe.updated_at};
-    const {data,error}=await sb.from('recipes').insert(row).select().maybeSingle();
-    if(!error && data){ recipe.id=data.id; }
-  }
-  S.recipes=[recipe,...(S.recipes||[])];
-  persistRecipesLocal();
-  renderRecipesList();
-  alert('Recipe saved.');
-}
-async function deleteRecipe(id){
-  if(!confirm('Delete this recipe?')) return;
-  if(currentUser && !String(id).startsWith('recipe_')) await sb.from('recipes').delete().eq('id',id);
-  S.recipes=(S.recipes||[]).filter(r=>r.id!==id);
-  persistRecipesLocal();
-  renderRecipesList();
-}
-function loadRecipeIntoDraft(id){
-  const r=(S.recipes||[]).find(x=>x.id===id);
-  if(!r) return;
-  const n=document.getElementById('recipe-name'), s=document.getElementById('recipe-servings');
-  if(n) n.value=r.name;
-  if(s) s.value=r.servings||1;
-  S.recipeDraft=(r.ingredients||[]).map(x=>({...x}));
-  renderRecipeDraft();
-}
-function renderRecipesList(){
-  const el=document.getElementById('recipes-list'); if(!el) return;
-  if(!S.recipes || !S.recipes.length){ el.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:18px">No saved recipes yet.</div>'; return; }
-  el.innerHTML=`<table><thead><tr><th>Recipe</th><th>Servings</th><th>Per serving</th><th>Actions</th></tr></thead><tbody>${S.recipes.map(r=>{
-    const total=r.nutrition||recipeTotals(r.ingredients||[]);
-    const servings=Math.max(1,r.servings||1);
-    return `<tr>
-      <td><strong>${r.name}</strong><div style="font-size:11px;color:var(--text-muted)">${(r.ingredients||[]).length} ingredients</div></td>
-      <td>${servings}</td>
-      <td>${Math.round(total.kcal/servings)} kcal · ${formatFoodNumber(total.carbs/servings,'g')} C · ${formatFoodNumber(total.protein/servings,'g')} P · ${formatFoodNumber(total.fat/servings,'g')} F</td>
-      <td><button class="btn" style="padding:4px 8px;font-size:11px" onclick="loadRecipeIntoDraft('${r.id}')">Edit copy</button> <button class="btn" style="padding:4px 8px;font-size:11px" onclick="deleteRecipe('${r.id}')">Delete</button></td>
-    </tr>`;
-  }).join('')}</tbody></table>`;
-}
-
-// ═══════════════════════════════════════════
 //  CLIENT SAVE / LOAD / PERSISTENCE
 // ═══════════════════════════════════════════
 const SAVE_FIELD_IDS = [
@@ -3701,6 +3556,10 @@ const SAVE_FIELD_IDS = [
   's-breakfast','s-lunch','s-dinner',
   'i-goal','i-goal-why','i-goal-tried','i-lifestyle','i-exercise','i-steps','i-sleep','i-stress','i-typical-diet','i-skip-meals','i-cravings','i-intolerances','i-digestion','i-coach-notes',
   'n-diagnoses','n-medication','n-allergies','n-dislikes','n-adherence','n-clinician-notes',
+  'en-must-weightloss','en-nrs-nutrition','en-nrs-disease','en-energy-approach','en-kcal-per-kg','en-protein-per-kg',
+  'en-formula-preset','en-formula-kcal-ml','en-formula-protein-100ml','en-infusion-hours','en-bolus-feeds',
+  'hen-duration','hen-situation',
+  ...EAT10_ITEMS.map((_,i)=>'en-eat10-q'+(i+1)),
   ...LAB_TESTS.map(t=>'lab-'+t.key)
 ];
 
@@ -3708,11 +3567,18 @@ const SAVE_FIELD_IDS = [
 function captureState(){
   const fields={};
   SAVE_FIELD_IDS.forEach(id=>{const el=document.getElementById(id); if(el) fields[id]=el.value;});
-  const conditions=Array.from(document.querySelectorAll('#p-conditions input[name="p-condition"]:checked')).map(cb=>cb.value);
-return {
-    fields, conditions,
+  const conditions=Array.from(document.querySelectorAll('#p-conditions input[type=checkbox]:checked')).map(cb=>cb.value);
+  // Standalone checkboxes (not part of SAVE_FIELD_IDS — .value on a checkbox
+  // doesn't reflect checked state, so these need explicit handling, same
+  // reasoning as why snack blocks / rep-include checkboxes are separate).
+  const enteralFlags = {
+    acute: document.getElementById('en-must-acute')?.checked || false,
+    onDialysis: document.getElementById('en-on-dialysis')?.checked || false,
+  };
+  return {
+    fields, conditions, enteralFlags,
     ex:S.ex, exAuto:S.exAuto, exMeta:S.exMeta, tracking:S.tracking, mealSel:S.mealSel,
-    weekPlans:S.weekPlans, mealLanguage:S.mealLanguage, reportOptions:S.reportOptions,
+    weekPlans:S.weekPlans, reportOptions:S.reportOptions,
     intake:S.intake, notes:S.notes, labValues:S.labValues,
     savedAt:new Date().toISOString()
   };
@@ -3721,11 +3587,14 @@ return {
 // Restores a previously captured state into the form + app state, then recalculates everything
 function applyState(state){
   if(!state) return;
+  renderEAT10Items(); // ensure the 10 dynamically-created inputs exist before SAVE_FIELD_IDS tries to set their values
   Object.entries(state.fields||{}).forEach(([id,val])=>{const el=document.getElementById(id); if(el) el.value=val;});
-  document.querySelectorAll('#p-conditions input[name="p-condition"]').forEach(cb=>{cb.checked=(state.conditions||[]).includes(cb.value);});
-  lastConditionRadio = document.querySelector('#p-conditions input[name="p-condition"]:checked') || null;
+  document.querySelectorAll('#p-conditions input[type=checkbox]').forEach(cb=>{cb.checked=(state.conditions||[]).includes(cb.value);});
   document.getElementById('pregnancy-trimester-field').style.display = (state.conditions||[]).includes('Pregnancy') ? 'block' : 'none';
-// Repopulate breakfast/lunch/dinner dropdowns with the CORRECT diet-filtered
+  const enFlags = state.enteralFlags || {};
+  const enAcuteEl = document.getElementById('en-must-acute'); if(enAcuteEl) enAcuteEl.checked = !!enFlags.acute;
+  const enDialysisEl = document.getElementById('en-on-dialysis'); if(enDialysisEl) enDialysisEl.checked = !!enFlags.onDialysis;
+  // Repopulate breakfast/lunch/dinner dropdowns with the CORRECT diet-filtered
   // option list BEFORE restoring their saved value — otherwise setting .value
   // to an option not present in the (possibly stale/filtered) <select> silently
   // fails and the dropdown falls back to its first option.
@@ -3749,7 +3618,6 @@ function applyState(state){
     }
   });
   if(state.weekPlans) S.weekPlans=state.weekPlans;
-  if(state.mealLanguage) S.mealLanguage=state.mealLanguage;
   if(state.reportOptions){
     S.reportOptions=state.reportOptions;
     const e1=document.getElementById('rep-include-1day'), e7=document.getElementById('rep-include-7day');
@@ -3761,6 +3629,8 @@ function applyState(state){
   S.labValues=state.labValues||{};
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
   calcAll(); calcBodyComp(); calcMacros();
+  calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
+  calcHenAccessDevice(); calcHenFormulaSelection();
 }
 
 // Resets the whole form/state back to a blank "new client" template
@@ -3772,8 +3642,7 @@ function resetForm(){
     if(el.tagName==='SELECT') el.selectedIndex=0;
     else el.value='';
   });
-  document.querySelectorAll('#p-conditions input[name="p-condition"]').forEach(cb=>cb.checked=false);
-  lastConditionRadio = null;
+  document.querySelectorAll('#p-conditions input[type=checkbox]').forEach(cb=>cb.checked=false);
   document.getElementById('pregnancy-trimester-field').style.display='none';
   document.getElementById('p-id').value='001';
   document.getElementById('p-date').value=new Date().toISOString().split('T')[0];
@@ -3793,11 +3662,20 @@ function resetForm(){
   S.tracking=[]; S.intake={}; S.notes={}; S.labValues={};
   S.mealSel={breakfast:'BRK_TOAST',lunch:'LUN_CHICKEN_RICE',dinner:'DIN_FISH_POTATO',snack1Extras:[],snack2Extras:[],sleepExtras:[]};
   S.weekPlans=WEEK_PLANS.map(p=>({...p}));
-  S.mealLanguage='GR';
   S.reportOptions={oneDay:true,sevenDay:true};
+  document.getElementById('en-must-acute') && (document.getElementById('en-must-acute').checked=false);
+  document.getElementById('en-on-dialysis') && (document.getElementById('en-on-dialysis').checked=false);
+  ['en-energy-approach','en-kcal-per-kg','en-protein-per-kg','en-formula-preset','en-formula-kcal-ml','en-formula-protein-100ml','en-infusion-hours','en-bolus-feeds'].forEach(id=>{
+    const el=document.getElementById(id); if(el && el.tagName==='SELECT') el.selectedIndex=0;
+  });
+  const enDefaults={'en-kcal-per-kg':27,'en-protein-per-kg':1.3,'en-formula-kcal-ml':1.0,'en-formula-protein-100ml':4.0,'en-infusion-hours':20,'en-bolus-feeds':5};
+  Object.entries(enDefaults).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.value=val; });
+  ['hen-duration','hen-situation'].forEach(id=>{ const el=document.getElementById(id); if(el) el.selectedIndex=0; });
   if(document.getElementById('page-labs')?.classList.contains('active')) renderLabsTable();
-  try{localStorage.removeItem('nutriflow_autosave');}catch(e){}
+  try{localStorage.removeItem('nutriengine_autosave');}catch(e){}
   calcAll(); calcBodyComp(); calcMacros();
+  calcMUST(); calcNRS(); calcEAT10(); calcEnteralTargets(); calcEnteralFormula();
+  calcHenAccessDevice(); calcHenFormulaSelection();
 }
 
 function newClient(){
@@ -3878,7 +3756,7 @@ function renderClientListRows(clients){
   }
   el.innerHTML='<table><thead><tr><th>Name</th><th>Client ID</th><th>Last saved</th><th></th></tr></thead><tbody>'+
     clients.map(c=>{
-      const cond=(c.data.conditions||[]).map(conditionLabel).join(', ')||'Healthy Eating';
+      const cond=(c.data.conditions||[]).join(', ')||'General';
       const savedAt=new Date(c.updated_at).toLocaleString('el-GR');
       return `<tr><td><strong>${c.name}</strong><div style="font-size:11px;color:var(--text-muted)">${cond}</div></td><td>${c.client_ref||'—'}</td><td>${savedAt}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" style="padding:5px 10px;font-size:12px" onclick="loadClientById('${c.id}')">📂 Load</button><button class="btn" style="padding:5px 10px;font-size:12px" onclick="deleteClientById('${c.id}')">🗑️ Delete</button></td></tr>`;
@@ -3909,12 +3787,12 @@ async function exportAllClients(){
     alert('No saved clients to back up yet. Save at least one client first ("💾 Save Client" on Client Profile).');
     return;
   }
-  const backup={app:'NutriFlow', version:'v1', exportedAt:new Date().toISOString(), clients:clients.map(c=>({client_ref:c.client_ref, name:c.name, state:c.data}))};
+  const backup={app:'NutriEngine', version:'v52', exportedAt:new Date().toISOString(), clients:clients.map(c=>({client_ref:c.client_ref, name:c.name, state:c.data}))};
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   const stamp=new Date().toISOString().split('T')[0];
-  a.href=url; a.download=`nutriflow_backup_${stamp}.json`;
+  a.href=url; a.download=`nutriengine_backup_${stamp}.json`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -3931,7 +3809,7 @@ function importClientsFile(input){
       const data=JSON.parse(e.target.result);
       const imported = data.clients || (Array.isArray(data) ? data : null);
       if(!imported || !Array.isArray(imported)){
-        alert('⚠️ This file doesn\'t look like a NutriFlow backup.');
+        alert('⚠️ This file doesn\'t look like a NutriEngine backup.');
         return;
       }
       let added=0, updated=0;
@@ -3951,7 +3829,7 @@ function importClientsFile(input){
       renderClientList();
       alert(`✅ Restore complete.\n\nAdded: ${added}\nUpdated: ${updated}`);
     }catch(err){
-      alert('⚠️ Could not read this file — make sure it\'s an unmodified NutriFlow backup JSON.');
+      alert('⚠️ Could not read this file — make sure it\'s an unmodified NutriEngine backup JSON.');
     }
     input.value='';
   };
@@ -3960,7 +3838,7 @@ function importClientsFile(input){
 
 // ── AUTO-SAVE (so an accidental close doesn't lose data) ──
 function autosaveSession(){
-  try{ localStorage.setItem('nutriflow_autosave', JSON.stringify(captureState())); }catch(e){}
+  try{ localStorage.setItem('nutriengine_autosave', JSON.stringify(captureState())); }catch(e){}
 }
 let autosaveTimer=null;
 let S_isDirty=false; // tracks whether changes exist that haven't been pushed via "Save Client" to the cloud
@@ -3988,7 +3866,7 @@ window.addEventListener('beforeunload', (e)=>{
 // ── RESTORE LAST SESSION ON LOAD ──
 function tryRestoreAutosave(){
   let saved=null;
-  try{ saved=JSON.parse(localStorage.getItem('nutriflow_autosave')||'null'); }catch(e){}
+  try{ saved=JSON.parse(localStorage.getItem('nutriengine_autosave')||'null'); }catch(e){}
   if(!saved || !saved.fields) return;
   const hasData = saved.fields['p-name'] || saved.fields['p-age'] || saved.fields['p-weight'];
   if(!hasData) return;
@@ -4078,11 +3956,11 @@ function toggleTheme() {
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
   const btn = document.getElementById('theme-btn');
   if (btn) btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
-  try { localStorage.setItem('nutriflow-theme', isDark ? 'light' : 'dark'); } catch(e) {}
+  try { localStorage.setItem('nutriengine-theme', isDark ? 'light' : 'dark'); } catch(e) {}
 }
 (function() {
   try {
-    const saved = localStorage.getItem('nutriflow-theme');
+    const saved = localStorage.getItem('nutriengine-theme');
     if (saved) { document.documentElement.setAttribute('data-theme', saved); }
     else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -4140,6 +4018,7 @@ function makeIcon(size) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const ctx = c.getContext('2d');
+  // Background — rounded square, same teal as the sidebar logo
   const r = size * 0.18;
   ctx.beginPath();
   ctx.moveTo(r, 0); ctx.lineTo(size-r, 0);
@@ -4153,6 +4032,7 @@ function makeIcon(size) {
   ctx.closePath();
   ctx.fillStyle = '#0F6E56';
   ctx.fill();
+  // 🌿 emoji — same icon used in the app's sidebar logo
   ctx.font = `${Math.round(size*0.6)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -4170,9 +4050,9 @@ if (appleIcon) appleIcon.href = icon192;
 
 // ── Inline Web App Manifest ──
 const manifest = {
-  name: "NutriFlow — Smart nutrition software",
-  short_name: "NutriFlow",
-  description: "Smart nutrition software",
+  name: "NutriEngine — Clinical Nutrition Toolkit",
+  short_name: "NutriEngine",
+  description: "Clinical nutrition toolkit: BMR/TDEE, exchanges, meal plans, reports",
   id: "./",
   start_url: "./",
   scope: "./",
@@ -4197,7 +4077,7 @@ if (manifestLink) manifestLink.href = manifestURL;
 // Only falls back to the cached copy when there's no network (offline use).
 // The cache version bumps with each app update so old caches are purged.
 const SW_CODE = `
-const CACHE = 'nutriflow-v1';
+const CACHE = 'nutriengine-v3';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -4237,7 +4117,7 @@ if ('serviceWorker' in navigator) {
   const swScope = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1) || '/';
   navigator.serviceWorker.register(swURL, {scope: swScope})
     .then(reg => {
-      console.log('NutriFlow SW registered', reg.scope);
+      console.log('NutriEngine SW registered', reg.scope);
     })
     .catch(err => {
       // Blob SW may be blocked in some browsers — that's fine, app still works offline via cache
@@ -4266,7 +4146,7 @@ function showInstallBanner() {
   `;
   banner.innerHTML = `
     <span>📲</span>
-    <span style="flex:1">Add NutriFlow to your home screen</span>
+    <span style="flex:1">Add NutriEngine to your home screen</span>
     <button onclick="installApp()" style="background:#fff;color:#0F6E56;border:none;padding:6px 12px;border-radius:7px;font-weight:700;cursor:pointer;font-size:12px">Install</button>
     <button onclick="this.closest('#install-banner').remove()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>
   `;
@@ -4310,22 +4190,3 @@ updateOnlineStatus();
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
